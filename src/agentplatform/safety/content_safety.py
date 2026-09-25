@@ -1,4 +1,4 @@
-"""Content Safety on inbound user text AND on retrieved/extracted text (indirect prompt injection).
+"""Content Safety gate for what users send and for what we retrieve or extract (indirect prompt injection).
 
 Offline: deterministic pattern checks. Azure: `azure-ai-contentsafety` analyze_text for harm
 categories + Prompt Shields REST (`text:shieldPrompt`, api-version 2024-09-01) for attacks, both with

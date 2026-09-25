@@ -1,4 +1,4 @@
-"""The context builder is the knowledge-plane runtime.
+"""Context builder: the runtime that decides which evidence tokens reach the model.
 
 Input: topics/questions, principal (tenant + groups), business as-of date, optional graph anchor and
 tool facts. Output: a packed, cited, budgeted evidence bundle plus a source map and a log of what
