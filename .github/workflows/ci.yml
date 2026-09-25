@@ -1,0 +1,35 @@
+name: ci
+on:
+  push: { branches: [main] }
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install -e ".[dev]"
+      - name: Lint
+        run: ruff check . && ruff format --check .
+      - name: Tests (offline, mocks)
+        run: pytest -q
+      - name: Agent cards are current
+        run: python scripts/export_agent_cards.py --check
+      - name: Eval release gate (golden sets)
+        run: python scripts/run_evals.py --out evals-out
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: eval-rows, path: evals-out }
+  bicep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Bicep CLI
+        run: |
+          curl -sSLo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64
+          chmod +x bicep && sudo mv bicep /usr/local/bin/bicep && bicep --version
+      - name: Build (lint rules run as part of build)
+        run: bicep build infra/main.bicep --stdout > /dev/null
