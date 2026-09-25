@@ -1,0 +1,45 @@
+{
+ "pages": 4,
+ "fields": {
+  "AccountHolderName": {
+   "value": "Jordan Rivera",
+   "confidence": 0.97
+  },
+  "BankName": {
+   "value": "Woodgrove Bank",
+   "confidence": 0.97
+  },
+  "StatementStartDate": {
+   "value": "2025-07-01",
+   "confidence": 0.97
+  },
+  "StatementEndDate": {
+   "value": "2025-08-31",
+   "confidence": 0.97
+  },
+  "EndingBalance": {
+   "value": 128000.0,
+   "confidence": 0.93
+  },
+  "Transactions": {
+   "value": [
+    {
+     "date": "2025-07-15",
+     "description": "PAYROLL CONTOSO HEALTH",
+     "deposit": 3900.0
+    },
+    {
+     "date": "2025-08-12",
+     "description": "TRANSFER FROM EXTERNAL ACCT",
+     "deposit": 6000.0
+    },
+    {
+     "date": "2025-08-15",
+     "description": "PAYROLL CONTOSO HEALTH",
+     "deposit": 3900.0
+    }
+   ],
+   "confidence": 0.9
+  }
+ }
+}

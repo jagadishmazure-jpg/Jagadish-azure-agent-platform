@@ -1,0 +1,40 @@
+{
+ "pages": 2,
+ "fields": {
+  "AccountHolderName": {
+   "value": "Casey Morgan",
+   "confidence": 0.97
+  },
+  "BankName": {
+   "value": "Contoso Credit Union",
+   "confidence": 0.97
+  },
+  "StatementStartDate": {
+   "value": "2025-01-01",
+   "confidence": 0.97
+  },
+  "StatementEndDate": {
+   "value": "2025-02-28",
+   "confidence": 0.97
+  },
+  "EndingBalance": {
+   "value": 95000.0,
+   "confidence": 0.62
+  },
+  "Transactions": {
+   "value": [
+    {
+     "date": "2025-01-31",
+     "description": "PAYROLL WOODGROVE",
+     "deposit": 5400.0
+    },
+    {
+     "date": "2025-02-28",
+     "description": "PAYROLL WOODGROVE",
+     "deposit": 5400.0
+    }
+   ],
+   "confidence": 0.91
+  }
+ }
+}

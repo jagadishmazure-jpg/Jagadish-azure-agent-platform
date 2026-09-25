@@ -1,0 +1,40 @@
+{
+ "pages": 3,
+ "fields": {
+  "AccountHolderName": {
+   "value": "Riley Chen",
+   "confidence": 0.97
+  },
+  "BankName": {
+   "value": "Woodgrove Bank",
+   "confidence": 0.97
+  },
+  "StatementStartDate": {
+   "value": "2025-09-01",
+   "confidence": 0.97
+  },
+  "StatementEndDate": {
+   "value": "2025-10-31",
+   "confidence": 0.97
+  },
+  "EndingBalance": {
+   "value": 260000.0,
+   "confidence": 0.97
+  },
+  "Transactions": {
+   "value": [
+    {
+     "date": "2025-09-30",
+     "description": "PAYROLL FABRIKAM",
+     "deposit": 9100.0
+    },
+    {
+     "date": "2025-10-31",
+     "description": "PAYROLL FABRIKAM",
+     "deposit": 9100.0
+    }
+   ],
+   "confidence": 0.92
+  }
+ }
+}

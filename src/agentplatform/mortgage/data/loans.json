@@ -1,0 +1,36 @@
+{
+  "_note": "Synthetic loan origination system (LOS) records served by the LOS MCP server.",
+  "loans": {
+    "L-1001": {"loan_id": "L-1001", "borrower_id": "B-1001", "borrower_name": "Jordan Rivera", "application_date": "2025-09-15",
+               "program": "conventional", "purpose": "purchase", "property": "12 Elm St", "purchase_price": 450000, "loan_amount": 360000,
+               "rate_pct": 6.5, "term_months": 360, "monthly_taxes_insurance_hoa": 650, "estimated_closing_costs": 9000,
+               "documents": [{"doc_id": "L-1001-paystub", "doc_type": "paystub"}, {"doc_id": "L-1001-w2", "doc_type": "w2"}, {"doc_id": "L-1001-bank", "doc_type": "bank_statement"}],
+               "counterparties": ["party:Pat Lee"]},
+    "L-1002": {"loan_id": "L-1002", "borrower_id": "B-1002", "borrower_name": "Casey Morgan", "application_date": "2025-03-10",
+               "program": "conventional", "purpose": "purchase", "property": "88 Lake Rd", "purchase_price": 375000, "loan_amount": 300000,
+               "rate_pct": 6.75, "term_months": 360, "monthly_taxes_insurance_hoa": 520, "estimated_closing_costs": 8000,
+               "documents": [{"doc_id": "L-1002-paystub", "doc_type": "paystub"}, {"doc_id": "L-1002-w2", "doc_type": "w2"}, {"doc_id": "L-1002-bank", "doc_type": "bank_statement"}],
+               "counterparties": ["party:Sam Ortiz"]},
+    "L-1003": {"loan_id": "L-1003", "borrower_id": "B-1003", "borrower_name": "Riley Chen", "application_date": "2025-11-20",
+               "program": "conventional", "purpose": "purchase", "property": "5 Birch Ct", "purchase_price": 650000, "loan_amount": 520000,
+               "rate_pct": 6.25, "term_months": 360, "monthly_taxes_insurance_hoa": 800, "estimated_closing_costs": 12000,
+               "documents": [{"doc_id": "L-1003-paystub", "doc_type": "paystub"}, {"doc_id": "L-1003-w2", "doc_type": "w2"}, {"doc_id": "L-1003-bank", "doc_type": "bank_statement"}],
+               "counterparties": ["party:Fabrikam Homes LLC"]}
+  },
+  "credit": {
+    "B-1001": {"scores": {"equifax": 748, "experian": 742, "transunion": 735}, "report_date": "2025-09-12",
+               "tradelines": [{"creditor": "Contoso Auto", "type": "installment", "monthly_payment": 450}, {"creditor": "Woodgrove Card", "type": "revolving", "monthly_payment": 120}],
+               "inquiries": [{"date": "2025-07-20", "creditor": "Fabrikam Furniture"}], "public_records": []},
+    "B-1002": {"scores": {"equifax": 701, "experian": 698, "transunion": 709}, "report_date": "2025-03-05",
+               "tradelines": [{"creditor": "Dept of Ed", "type": "student", "monthly_payment": 400}, {"creditor": "Contoso Auto", "type": "installment", "monthly_payment": 500}],
+               "inquiries": [], "public_records": []},
+    "B-1003": {"scores": {"equifax": 655, "experian": 661, "transunion": 650}, "report_date": "2025-11-18",
+               "tradelines": [{"creditor": "Woodgrove Card", "type": "revolving", "monthly_payment": 300}, {"creditor": "Tailspin Auto", "type": "installment", "monthly_payment": 800}, {"creditor": "Dept of Ed", "type": "student", "monthly_payment": 1000}],
+               "inquiries": [], "public_records": [{"type": "chapter7_bankruptcy", "discharged": "2019-06-01"}]}
+  },
+  "crm": {
+    "B-1001": {"borrower_id": "B-1001", "preferred_channel": "email", "loan_officer": "Morgan Blake", "consents": ["econsent", "credit_pull"], "open_tasks": 0},
+    "B-1002": {"borrower_id": "B-1002", "preferred_channel": "sms", "loan_officer": "Morgan Blake", "consents": ["econsent", "credit_pull"], "open_tasks": 1},
+    "B-1003": {"borrower_id": "B-1003", "preferred_channel": "email", "loan_officer": "Dana Kim", "consents": ["econsent", "credit_pull"], "open_tasks": 0}
+  }
+}

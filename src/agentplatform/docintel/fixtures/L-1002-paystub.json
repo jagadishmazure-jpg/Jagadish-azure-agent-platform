@@ -1,0 +1,28 @@
+{
+ "fields": {
+  "EmployeeName": {
+   "value": "Casey Morgan",
+   "confidence": 0.97
+  },
+  "EmployerName": {
+   "value": "Woodgrove Bank",
+   "confidence": 0.97
+  },
+  "PayDate": {
+   "value": "2025-02-28",
+   "confidence": 0.97
+  },
+  "PayPeriodEndDate": {
+   "value": "2025-02-28",
+   "confidence": 0.97
+  },
+  "CurrentPeriodGrossPay": {
+   "value": 7000.0,
+   "confidence": 0.97
+  },
+  "YearToDateGrossPay": {
+   "value": 14000.0,
+   "confidence": 0.97
+  }
+ }
+}

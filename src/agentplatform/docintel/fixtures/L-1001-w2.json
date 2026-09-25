@@ -1,0 +1,20 @@
+{
+ "fields": {
+  "EmployeeName": {
+   "value": "Jordan Rivera",
+   "confidence": 0.97
+  },
+  "EmployerName": {
+   "value": "Contoso Health",
+   "confidence": 0.97
+  },
+  "TaxYear": {
+   "value": "2024",
+   "confidence": 0.97
+  },
+  "WagesTipsAndOtherCompensation": {
+   "value": 118000.0,
+   "confidence": 0.96
+  }
+ }
+}

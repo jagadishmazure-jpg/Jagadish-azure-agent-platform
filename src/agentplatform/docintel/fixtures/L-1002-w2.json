@@ -1,0 +1,20 @@
+{
+ "fields": {
+  "EmployeeName": {
+   "value": "Casey Morgan",
+   "confidence": 0.97
+  },
+  "EmployerName": {
+   "value": "Woodgrove Bank",
+   "confidence": 0.97
+  },
+  "TaxYear": {
+   "value": "2024",
+   "confidence": 0.97
+  },
+  "WagesTipsAndOtherCompensation": {
+   "value": 96000.0,
+   "confidence": 0.97
+  }
+ }
+}

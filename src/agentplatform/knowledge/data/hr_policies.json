@@ -1,0 +1,10 @@
+{
+  "_note": "Synthetic HR policy corpus for the single-agent HR demo.",
+  "chunks": [
+    {"id": "HR-PTO-01", "title": "Paid time off accrual", "section": "Leave", "content": "Full-time employees accrue 1.5 days of paid time off per month, up to 20 days per year. Up to 5 unused days carry over to the next year.", "effective_from": "2024-01-01", "effective_to": null, "allowed_groups": ["employees"]},
+    {"id": "HR-PAR-02", "title": "Parental leave", "section": "Leave", "content": "Eligible employees receive 16 weeks of paid parental leave within 12 months of a birth, adoption, or foster placement.", "effective_from": "2025-01-01", "effective_to": null, "allowed_groups": ["employees"]},
+    {"id": "HR-PAR-01", "title": "Parental leave (superseded)", "section": "Leave", "content": "Eligible employees receive 12 weeks of paid parental leave.", "effective_from": "2022-01-01", "effective_to": "2024-12-31", "allowed_groups": ["employees"]},
+    {"id": "HR-RMT-03", "title": "Remote work", "section": "Workplace", "content": "Employees may work remotely up to three days per week with manager approval. Fully remote arrangements require HR business partner approval.", "effective_from": "2024-01-01", "effective_to": null, "allowed_groups": ["employees"]},
+    {"id": "HR-CMP-09", "title": "Compensation bands (managers only)", "section": "Compensation", "content": "Salary band ranges by level are confidential and visible to people managers only.", "effective_from": "2024-01-01", "effective_to": null, "allowed_groups": ["people-managers"]}
+  ]
+}

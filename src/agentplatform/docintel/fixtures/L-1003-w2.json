@@ -1,0 +1,20 @@
+{
+ "fields": {
+  "EmployeeName": {
+   "value": "Riley Chen",
+   "confidence": 0.97
+  },
+  "EmployerName": {
+   "value": "Fabrikam Homes LLC",
+   "confidence": 0.97
+  },
+  "TaxYear": {
+   "value": "2024",
+   "confidence": 0.97
+  },
+  "WagesTipsAndOtherCompensation": {
+   "value": 150000.0,
+   "confidence": 0.97
+  }
+ }
+}
