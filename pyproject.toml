@@ -29,7 +29,7 @@ dependencies = [
 
 [project.optional-dependencies]
 eval = ["azure-ai-evaluation==1.18.7"]
-dev = ["azure-ai-evaluation==1.18.7", "pytest==9.1.1", "pytest-asyncio==1.4.0", "ruff==0.16.9"]
+dev = ["azure-ai-evaluation==1.18.7", "pyyaml>=6", "pytest==9.1.1", "pytest-asyncio==1.4.0", "ruff==0.16.9"]
 
 [build-system]
 requires = ["hatchling"]

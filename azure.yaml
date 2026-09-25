@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+# `azd up` = provision infra/main.bicep + build/push images to ACR + deploy to Container Apps.
+# Stand-in vendor agents: set `azd env set AAP_DEPLOY_STANDINS true` and uncomment the three services below.
+name: azure-agent-platform
+metadata:
+  template: azure-agent-platform@0.1.0
+infra:
+  provider: bicep
+  path: infra
+  module: main
+services:
+  bff:
+    project: .
+    language: python
+    host: containerapp
+    docker: { path: services/bff/Dockerfile, context: ., remoteBuild: true }
+  a2a-underwriting:
+    project: .
+    language: python
+    host: containerapp
+    docker: { path: services/a2a/Dockerfile, context: ., remoteBuild: true }
+  a2a-crm:
+    project: .
+    language: python
+    host: containerapp
+    docker: { path: services/a2a/Dockerfile, context: ., remoteBuild: true }
+  a2a-erp:
+    project: .
+    language: python
+    host: containerapp
+    docker: { path: services/a2a/Dockerfile, context: ., remoteBuild: true }
+  mcp-credit-bureau:
+    project: .
+    language: python
+    host: containerapp
+    docker: { path: services/mcp/Dockerfile, context: ., remoteBuild: true }
+  mcp-los:
+    project: .
+    language: python
+    host: containerapp
+    docker: { path: services/mcp/Dockerfile, context: ., remoteBuild: true }
+  # a2a-dynamics-standin:   { project: ., language: python, host: containerapp, docker: { path: services/a2a/Dockerfile, context: ., remoteBuild: true } }
+  # a2a-salesforce-standin: { project: ., language: python, host: containerapp, docker: { path: services/a2a/Dockerfile, context: ., remoteBuild: true } }
+  # a2a-sap-standin:        { project: ., language: python, host: containerapp, docker: { path: services/a2a/Dockerfile, context: ., remoteBuild: true } }
+hooks:
+  postprovision:
+    posix:
+      shell: sh
+      run: ./scripts/postprovision.sh
+      interactive: false
+      continueOnError: false
