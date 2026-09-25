@@ -41,3 +41,13 @@ async def test_los_queue_is_idempotent():
     t1 = await gw.call("los", "queue_status_update", args, write=True)
     t2 = await ToolGateway().call("los", "queue_status_update", args, write=True)
     assert t1 == t2
+
+
+async def test_unreachable_mcp_server_maps_to_transient(monkeypatch):
+    """A down MCP endpoint must enter the failure policy as TransientError (retry/degrade), not crash the graph."""
+    from agentplatform.harness.resilience import TransientError
+    from agentplatform.mcp_servers.gateway import ToolGateway
+
+    monkeypatch.setenv("MCP_LOS_URL", "http://127.0.0.1:9/mcp")
+    with pytest.raises(TransientError):
+        await ToolGateway().call("los", "get_loan_file", {"loan_id": "L-1001"})

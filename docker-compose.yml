@@ -1,0 +1,40 @@
+# Local run with mocks (AAP_MODE=offline): BFF + A2A agents + MCP servers as separate containers,
+# talking over real HTTP exactly like Container Apps (A2A_*_URL / MCP_*_URL), no Azure needed.
+#   docker compose up --build   →   curl -X POST localhost:8080/loans/L-1001/underwrite
+x-common: &common
+  build: { context: ., dockerfile: services/a2a/Dockerfile }
+  environment: &env
+    AAP_MODE: offline
+    AAP_A2A_REMOTE: "1"
+    A2A_UNDERWRITING_AGENT_URL: http://underwriting-agent:8080
+    A2A_CRM_AGENT_URL: http://crm-agent:8080
+    A2A_ERP_AGENT_URL: http://erp-agent:8080
+    A2A_DYNAMICS_CRM_STANDIN_URL: http://dynamics-crm-standin:8080
+    A2A_SALESFORCE_CRM_STANDIN_URL: http://salesforce-crm-standin:8080
+    A2A_SAP_ERP_STANDIN_URL: http://sap-erp-standin:8080
+    MCP_CREDIT_BUREAU_URL: http://mcp-credit-bureau:8080/mcp
+    MCP_LOS_URL: http://mcp-los:8080/mcp
+    AAP_TRACE_CONSOLE: "0"
+
+services:
+  bff:
+    build: { context: ., dockerfile: services/bff/Dockerfile }
+    environment: *env
+    ports: ["8080:8080"]
+    depends_on: [underwriting-agent, crm-agent, erp-agent, mcp-credit-bureau, mcp-los]
+
+  underwriting-agent: { <<: *common, command: ["python", "-m", "agentplatform.a2a", "underwriting-agent"] }
+  crm-agent: { <<: *common, command: ["python", "-m", "agentplatform.a2a", "crm-agent"] }
+  erp-agent: { <<: *common, command: ["python", "-m", "agentplatform.a2a", "erp-agent"] }
+  dynamics-crm-standin: { <<: *common, command: ["python", "-m", "agentplatform.a2a", "dynamics-crm-standin"], profiles: ["standins"] }
+  salesforce-crm-standin: { <<: *common, command: ["python", "-m", "agentplatform.a2a", "salesforce-crm-standin"], profiles: ["standins"] }
+  sap-erp-standin: { <<: *common, command: ["python", "-m", "agentplatform.a2a", "sap-erp-standin"], profiles: ["standins"] }
+
+  mcp-credit-bureau:
+    build: { context: ., dockerfile: services/mcp/Dockerfile }
+    environment: *env
+    command: ["python", "-m", "agentplatform.mcp_servers", "credit-bureau"]
+  mcp-los:
+    build: { context: ., dockerfile: services/mcp/Dockerfile }
+    environment: *env
+    command: ["python", "-m", "agentplatform.mcp_servers", "los"]

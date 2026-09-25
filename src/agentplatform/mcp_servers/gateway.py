@@ -33,6 +33,27 @@ def _server_target(name: str):
     return server
 
 
+_TRANSPORT_ERRORS = {
+    "ConnectError",
+    "ConnectTimeout",
+    "ReadTimeout",
+    "WriteTimeout",
+    "PoolTimeout",
+    "RemoteProtocolError",
+    "ReadError",
+    "TimeoutException",
+}
+
+
+def _is_transport_error(exc: BaseException) -> bool:
+    """True for network-level failures (retryable), including ones wrapped in ExceptionGroups/causes."""
+    if isinstance(exc, (TimeoutError, ConnectionError)) or type(exc).__name__ in _TRANSPORT_ERRORS:
+        return True
+    if isinstance(exc, BaseExceptionGroup):
+        return all(_is_transport_error(e) for e in exc.exceptions)
+    return exc.__cause__ is not None and _is_transport_error(exc.__cause__)
+
+
 class ToolGateway:
     def __init__(self, budget: Budget | None = None) -> None:
         self.budget = budget or Budget()
@@ -53,8 +74,10 @@ class ToolGateway:
             try:
                 async with Client(_server_target(server)) as c:
                     result = await c.call_tool(tool, args)
-            except (TimeoutError, ConnectionError) as exc:
-                raise TransientError(f"{server}.{tool}: {exc}") from exc
+            except Exception as exc:  # transport failures surface as (nested) ExceptionGroups from anyio
+                if _is_transport_error(exc):
+                    raise TransientError(f"{server}.{tool}: unreachable ({type(exc).__name__})") from exc
+                raise
             if result.is_error:
                 text = " ".join(getattr(x, "text", "") for x in result.content)
                 if "TRANSIENT" in text or "timeout" in text.lower():
