@@ -36,6 +36,7 @@ Agent Service surface used here is `azure-ai-projects` 2.x (`project.agents.crea
   * Resume after process restart: `await workflow.run(checkpoint_id=..., checkpoint_storage=...)` re-emits pending `request_info` events, then `run(responses=...)`.
   * `FileCheckpointStorage(path, allowed_checkpoint_types=["module:Qualname", ...])` — application dataclasses must be allow-listed or checkpoint creation is skipped (pickle hardening).
   * `WorkflowRunResult.get_outputs()`, `.get_request_info_events()`, `.get_final_state()`.
+* Tool approval: `@tool(approval_mode="always_require")`. The run returns `response.user_input_requests` (function-approval request contents); reply with `req.to_function_approval_response(approved=bool)` in a user `Message` on the **same `AgentSession`**. Verified: a denied reset never executes the tool; an approved one executes exactly once. MAF 1.19 logs one benign "Ignored an approval response ... did not match the active approval occurrence identity" warning per resumed turn in this flow; the result is still correct.
 * `FoundryChatClient(project_endpoint=..., model=..., credential=...)` reads `FOUNDRY_PROJECT_ENDPOINT` and `FOUNDRY_MODEL`.
 
 ## Foundry Agent Service via `azure-ai-projects` 2.6.1
@@ -80,8 +81,38 @@ Agent Service surface used here is `azure-ai-projects` 2.x (`project.agents.crea
 * `@server.tool()`; `server.streamable_http_app(streamable_http_path="/mcp", stateless_http=True)` for HTTP hosting.
 * Client: `from mcp import Client`; `async with Client(server_or_url) as c: await c.call_tool(name, args)`. Passing the `MCPServer` instance connects in-process (used by tests). Dict results come back as JSON text content.
 
+## azure-ai-evaluation 1.18.7
+
+* `evaluate(data=<jsonl>, evaluators={...}, evaluator_config={name: {"column_mapping": {...}}}, azure_ai_project=<project endpoint str>, evaluation_name=..., tags=...)`.
+* AI-assisted evaluators: `GroundednessEvaluator(model_config, credential=..., threshold=3)`, `RelevanceEvaluator(model_config, credential=...)`; `model_config` is an `AzureOpenAIModelConfiguration` TypedDict (`azure_endpoint`, `azure_deployment`, `api_version`).
+* Custom evaluators are plain callables. **`evaluate()` derives required columns from the `__call__` signature** — a `**kwargs` parameter makes it demand a column named `_`/`kwargs` and fail. Our evaluators use explicit keyword parameters. Verified offline: `evaluate()` with only the custom evaluator runs without Azure (test_evals.py).
+
+## Azure AI Search SDK 12.0.0 + service facts
+
+* Index models used: `SearchIndex`, `SimpleField`/`SearchableField`/`SearchField`, `VectorSearch`, `HnswAlgorithmConfiguration`, `VectorSearchProfile(vectorizer_name=...)`, `AzureOpenAIVectorizer(vectorizer_name, parameters=AzureOpenAIVectorizerParameters(resource_url, deployment_name, model_name))`, `SemanticConfiguration`/`SemanticPrioritizedFields`/`SemanticSearch`; query with `VectorizableTextQuery` + `query_type="semantic"` + OData `filter`.
+* Document keys may only contain letters, digits, `_`, `-`, `=` — so `GL-DTI-200.v1` is stored as `GL-DTI-200_v1` and the citation id is rebuilt from `guideline_id` + `version` on read.
+* Semantic ranker billing: `free` plan (monthly allowance) on every tier; `standard` (pay-as-you-go) needs Basic+. Newer management API versions drop the `disabled` value. A usage-based "serverless" tier is listed on the pricing page; not used here.
+
+## Azure RBAC role IDs (checked against the built-in roles reference)
+
+| Role | GUID |
+|---|---|
+| Foundry User (formerly "Azure AI User") | 53ca6127-db72-4b80-b1b0-d745d6d5456d |
+| Cognitive Services OpenAI User | 5e0bd9bd-7b93-4f28-af87-19fc36ad61bd |
+| Cognitive Services User | a97b65f3-24c7-4388-baec-2e87135dc908 |
+| Search Index Data Reader / Contributor | 1407120a-92aa-4202-b7e9-c0e197c71c8f / 8ebe5a00-799e-43f5-93ac-243d3dce84a7 |
+| Search Service Contributor | 7ca78c08-252a-4471-8644-bb5ff32d4ba0 |
+| Azure Service Bus Data Sender | 69a216fc-b8fb-44d8-bc22-1f3c2cd27a39 |
+| Key Vault Secrets User | 4633458b-17de-408a-b874-0445c86b69e6 |
+| AcrPull | 7f951dda-4ed3-4680-a7ca-43fe172d538d |
+| Cosmos DB Built-in Data Contributor (data plane) | 00000000-0000-0000-0000-000000000002 |
+
+## Agent Framework + Cosmos
+
+* `agent_framework_azure_cosmos.CosmosCheckpointStorage` creates/uses a container partitioned on `/workflow_name` — the Bicep `checkpoints` container matches. That is why each run gets its own workflow name (`mortgage-uw:{run_id}`).
+
 ## Not verifiable offline
 
 * Real Azure calls (Foundry agent creation, Search queries, DI analysis, Content Safety, Cosmos, Service Bus, App Insights export) are behind `AAP_MODE=azure` and were **not executed** — no Azure resources were created. Their code paths follow the signatures above and are import-checked in tests.
 * Bicep was compiled with Bicep CLI 0.47.16 (`bicep build`); a real `azd provision` / what-if was not run.
-* Docker is not available on the build box; Dockerfiles were not built.
+* Docker is not available on the build box; Dockerfiles were not built. The same multi-service topology was exercised over real HTTP with `scripts/run_local_mesh.sh` (BFF → A2A agents → MCP servers as separate processes).
