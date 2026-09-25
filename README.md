@@ -133,7 +133,8 @@ The platform pieces carry over across industries. Only the prompts, tools, corpo
 
 ```bash
 python -m venv .venv && . .venv/bin/activate && pip install -e ".[dev]"
-make test            # ruff + pytest (70 tests, offline)
+make lint            # ruff check + ruff format --check
+make test            # pytest (70 tests, offline)
 make demo            # underwrite L-1001 / L-1002 / L-1003, approve, print letters
 make evals           # golden-set eval gate
 uvicorn agentplatform.bff:app --port 8080     # in-process BFF
@@ -176,7 +177,7 @@ The postprovision hook seeds AI Search, registers the Foundry agents, and checks
 | **MCP / A2A contracts** | MCP tool schemas are validated by the gateway. A2A 1.0 cards are at `/.well-known/agent-card.json`, with a control-plane extension (owner, stage, side-effect class, allowed callers, eval score). |
 | **Stop conditions** | `max_iterations` on the graph, at most 1 critic repair, step / token / tool budgets, identical-call caps, a HITL SLA (expiry means return to processing, never auto-approve), and the kill switch. |
 | **Failure playbooks** | A five-exit table per node ([docs/failure-table.md](docs/failure-table.md)), chaos-tested: model down, search down, bureau down or timeout, LOS write failure, injected guideline, kill switch. |
-| **Eval set** | `evals/golden/mortgage_conditions.jsonl` (recommendation, required and forbidden conditions, including the ACL case) and `hr_policy.jsonl`. The gate requires policy compliance = 1.0, condition recall ≥ 0.95, and zero leaks. |
+| **Eval set** | `src/agentplatform/evals/golden/mortgage_conditions.jsonl` (recommendation, required and forbidden conditions, including the ACL case) and `hr_policy.jsonl`. The gate requires policy compliance = 1.0, condition recall ≥ 0.95, and zero leaks. |
 | **Owner** | `mortgage-ai@contoso` (card) and the underwriting operations lead (business) |
 | **KPIs** | Time from application to conditional approval, conditions per file, condition rework rate, share of conditions overturned by underwriters, and cost per file (tokens + DI pages). |
 
@@ -200,6 +201,40 @@ scripts/             foundry_register · seed_search_index · run_evals · expor
 docs/                architecture · engineering-layers · failure-table · cost-estimate · deploy · sdk-notes
 tests/               70 offline tests (pytest)
 ```
+
+### Repository map
+
+Every folder has its own README with a file-by-file table:
+
+| Folder | What's there |
+|---|---|
+| [`src/agentplatform/`](src/agentplatform/README.md) | Python package overview and module map |
+| [`src/agentplatform/harness/`](src/agentplatform/harness/README.md) | Five-exit failure handling, budgets, resilience, kill switch, outbox, tracing, identity |
+| [`src/agentplatform/prompts/`](src/agentplatform/prompts/README.md) | Versioned prompt pack and registry (pack files documented here) |
+| [`src/agentplatform/context/`](src/agentplatform/context/README.md) | Temporal/ACL-aware context builder |
+| [`src/agentplatform/knowledge/`](src/agentplatform/knowledge/README.md) | Hybrid retrieval (Azure AI Search or offline stand-in), index schema |
+| [`src/agentplatform/knowledge/data/`](src/agentplatform/knowledge/data/README.md) | Synthetic guideline and HR-policy data |
+| [`src/agentplatform/docintel/`](src/agentplatform/docintel/README.md) | Document Intelligence extractor |
+| [`src/agentplatform/docintel/fixtures/`](src/agentplatform/docintel/fixtures/README.md) | Offline extraction fixtures |
+| [`src/agentplatform/llm/`](src/agentplatform/llm/README.md) | Chat client factory and deterministic mock |
+| [`src/agentplatform/safety/`](src/agentplatform/safety/README.md) | Content Safety gate |
+| [`src/agentplatform/mcp_servers/`](src/agentplatform/mcp_servers/README.md) | MCP servers (LOS, credit bureau) and gateway |
+| [`src/agentplatform/mortgage/`](src/agentplatform/mortgage/README.md) | Flagship underwriting graph, rules, agents |
+| [`src/agentplatform/mortgage/data/`](src/agentplatform/mortgage/data/README.md) | Synthetic loan files |
+| [`src/agentplatform/a2a/`](src/agentplatform/a2a/README.md) | A2A agents, catalog, cards, server, client, registry |
+| [`src/agentplatform/single/`](src/agentplatform/single/README.md) | Single-agent HR and IT examples |
+| [`src/agentplatform/evals/`](src/agentplatform/evals/README.md) | Eval runner and release gate |
+| [`src/agentplatform/evals/golden/`](src/agentplatform/evals/golden/README.md) | Golden eval sets |
+| [`control-plane/agent-cards/`](control-plane/agent-cards/README.md) | Generated A2A agent cards and policy |
+| [`infra/`](infra/README.md) | Bicep entry point and azd parameters |
+| [`infra/modules/`](infra/modules/README.md) | Bicep modules |
+| [`services/bff/`](services/bff/README.md) | BFF container |
+| [`services/a2a/`](services/a2a/README.md) | A2A agent container |
+| [`services/mcp/`](services/mcp/README.md) | MCP server container |
+| [`scripts/`](scripts/README.md) | Demo, evals, card export, Azure dry-run scripts |
+| [`docs/`](docs/README.md) | Architecture and engineering docs |
+| [`tests/`](tests/README.md) | Offline test suite |
+| [`.github/workflows/`](.github/workflows/README.md) | CI and deploy workflows |
 
 ## Honest limitations
 
