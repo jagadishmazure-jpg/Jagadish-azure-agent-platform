@@ -48,7 +48,7 @@ curl -X POST "$APIM_GATEWAY_URL/agents/loans/L-1001/underwrite" -H "Ocp-Apim-Sub
 
 `.github/workflows/deploy.yml` runs only on `workflow_dispatch`, and only when the repository variable `ENABLE_DEPLOY` is `true`. To set it up:
 
-1. Create an app registration (or a user-assigned MI) with a **federated credential** for subject `repo:jagadishmazure-jpg/azure-agent-platform:environment:dev`.
+1. Create an app registration (or a user-assigned MI) with a **federated credential** for subject `repo:jagadishmazure-jpg/Jagadish-azure-agent-platform:environment:dev`.
 2. Grant it Contributor, plus RBAC Administrator constrained to the roles in `infra/modules/roles.bicep`, on the subscription.
 3. Add the repository variables `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, and `ENABLE_DEPLOY=true`. No secrets are stored.
 4. Run the workflow. Its `teardown` input runs `azd down --purge`.

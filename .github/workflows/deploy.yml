@@ -3,7 +3,7 @@
 #
 # One-time setup (see docs/deploy.md):
 #   1. Create an Entra app registration / user-assigned MI with a federated credential for
-#      repo:jagadishmazure-jpg/azure-agent-platform:environment:dev
+#      repo:jagadishmazure-jpg/Jagadish-azure-agent-platform:environment:dev
 #   2. Grant it Contributor + Role Based Access Control Administrator (conditioned to the roles in
 #      infra/modules/roles.bicep) on the target subscription or resource group.
 #   3. Repository variables: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, ENABLE_DEPLOY=true
