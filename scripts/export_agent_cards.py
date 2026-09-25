@@ -14,7 +14,10 @@ OUT = Path(__file__).resolve().parents[1] / "control-plane" / "agent-cards"
 
 def render() -> dict[str, str]:
     files = {f"{s.id}.json": json.dumps(card_json(s), indent=2, sort_keys=True) + "\n" for s in CATALOG}
-    policy = {s.id: {"allowed_callers": sorted(s.allowed_callers), "stage": s.stage, "standin": s.standin} for s in CATALOG}
+    policy = {
+        s.id: {"allowed_callers": sorted(s.allowed_callers), "stage": s.stage, "standin": s.standin}
+        for s in CATALOG
+    }
     files["_policy.json"] = json.dumps(policy, indent=2, sort_keys=True) + "\n"
     return files
 
