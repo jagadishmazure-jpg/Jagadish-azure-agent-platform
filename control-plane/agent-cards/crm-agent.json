@@ -1,0 +1,90 @@
+{
+  "capabilities": {
+    "extensions": [
+      {
+        "description": "Control-plane registration: owner, policy, side effects, eval gate",
+        "params": {
+          "agent_id": "crm-agent",
+          "allowed_callers": [
+            "mortgage-underwriting",
+            "experience-bff",
+            "underwriting-agent"
+          ],
+          "eval_score": 0.95,
+          "model_deployment": "",
+          "owner": "crm-platform",
+          "prompt_refs": [],
+          "requires_headers": [
+            "traceparent",
+            "x-tenant-id",
+            "x-caller-agent"
+          ],
+          "side_effect_class": "write-queued",
+          "skill_side_effects": {
+            "create_followup_task": "write-queued",
+            "get_borrower_profile": "read"
+          },
+          "stage": "production",
+          "standin": false,
+          "system_of_record": "CRM (Dataverse-style)",
+          "tenants": [
+            "*"
+          ],
+          "vendor_style": ""
+        },
+        "uri": "urn:agentplatform:control-plane:v1"
+      }
+    ],
+    "streaming": false
+  },
+  "defaultInputModes": [
+    "application/json"
+  ],
+  "defaultOutputModes": [
+    "application/json"
+  ],
+  "description": "Custom domain agent over the CRM (borrower profile, consents, follow-up tasks).",
+  "name": "CRM Agent",
+  "provider": {
+    "organization": "Contoso Mortgage (demo)",
+    "url": "https://github.com/jagadishmazure-jpg"
+  },
+  "skills": [
+    {
+      "description": "Contact prefs, consents, loan officer. [side-effect: read]",
+      "id": "get_borrower_profile",
+      "inputModes": [
+        "application/json"
+      ],
+      "name": "Get borrower profile",
+      "outputModes": [
+        "application/json"
+      ],
+      "tags": [
+        "crm"
+      ]
+    },
+    {
+      "description": "Queue a loan-officer task (idempotent). [side-effect: write-queued]",
+      "id": "create_followup_task",
+      "inputModes": [
+        "application/json"
+      ],
+      "name": "Create follow-up task",
+      "outputModes": [
+        "application/json"
+      ],
+      "tags": [
+        "crm"
+      ]
+    }
+  ],
+  "supportedInterfaces": [
+    {
+      "protocolBinding": "JSONRPC",
+      "protocolVersion": "1.0",
+      "url": "http://crm-agent.local/a2a"
+    }
+  ],
+  "version": "1.2.0"
+}

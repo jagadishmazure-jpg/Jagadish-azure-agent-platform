@@ -1,0 +1,89 @@
+{
+  "capabilities": {
+    "extensions": [
+      {
+        "description": "Control-plane registration: owner, policy, side effects, eval gate",
+        "params": {
+          "agent_id": "erp-agent",
+          "allowed_callers": [
+            "mortgage-underwriting",
+            "underwriting-agent"
+          ],
+          "eval_score": 0.91,
+          "model_deployment": "",
+          "owner": "finance-systems",
+          "prompt_refs": [],
+          "requires_headers": [
+            "traceparent",
+            "x-tenant-id",
+            "x-caller-agent"
+          ],
+          "side_effect_class": "write-queued",
+          "skill_side_effects": {
+            "get_fee_ledger": "read",
+            "post_fee_invoice": "write-queued"
+          },
+          "stage": "production",
+          "standin": false,
+          "system_of_record": "ERP (GL/AR)",
+          "tenants": [
+            "*"
+          ],
+          "vendor_style": ""
+        },
+        "uri": "urn:agentplatform:control-plane:v1"
+      }
+    ],
+    "streaming": false
+  },
+  "defaultInputModes": [
+    "application/json"
+  ],
+  "defaultOutputModes": [
+    "application/json"
+  ],
+  "description": "Custom domain agent over ERP finance (fee ledger, invoice postings).",
+  "name": "ERP Agent",
+  "provider": {
+    "organization": "Contoso Mortgage (demo)",
+    "url": "https://github.com/jagadishmazure-jpg"
+  },
+  "skills": [
+    {
+      "description": "Appraisal/credit fees billed for a loan. [side-effect: read]",
+      "id": "get_fee_ledger",
+      "inputModes": [
+        "application/json"
+      ],
+      "name": "Get fee ledger",
+      "outputModes": [
+        "application/json"
+      ],
+      "tags": [
+        "erp"
+      ]
+    },
+    {
+      "description": "Queue a fee invoice posting (idempotent). [side-effect: write-queued]",
+      "id": "post_fee_invoice",
+      "inputModes": [
+        "application/json"
+      ],
+      "name": "Post fee invoice",
+      "outputModes": [
+        "application/json"
+      ],
+      "tags": [
+        "erp"
+      ]
+    }
+  ],
+  "supportedInterfaces": [
+    {
+      "protocolBinding": "JSONRPC",
+      "protocolVersion": "1.0",
+      "url": "http://erp-agent.local/a2a"
+    }
+  ],
+  "version": "1.0.3"
+}

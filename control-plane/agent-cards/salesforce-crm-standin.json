@@ -1,0 +1,83 @@
+{
+  "capabilities": {
+    "extensions": [
+      {
+        "description": "Control-plane registration: owner, policy, side effects, eval gate",
+        "params": {
+          "agent_id": "salesforce-crm-standin",
+          "allowed_callers": [
+            "mortgage-underwriting",
+            "experience-bff"
+          ],
+          "eval_score": 0.78,
+          "model_deployment": "",
+          "owner": "platform-demo",
+          "prompt_refs": [],
+          "requires_headers": [
+            "traceparent",
+            "x-tenant-id",
+            "x-caller-agent"
+          ],
+          "side_effect_class": "write-queued",
+          "skill_side_effects": {
+            "create_task": "write-queued",
+            "get_lead": "read"
+          },
+          "stage": "staging",
+          "standin": true,
+          "system_of_record": "CRM",
+          "tenants": [
+            "*"
+          ],
+          "vendor_style": "Salesforce-style"
+        },
+        "uri": "urn:agentplatform:control-plane:v1"
+      }
+    ],
+    "streaming": false
+  },
+  "defaultInputModes": [
+    "application/json"
+  ],
+  "defaultOutputModes": [
+    "application/json"
+  ],
+  "description": "STAND-IN imitating a Salesforce-style prebuilt agent contract. Not Salesforce software.",
+  "name": "Salesforce-style CRM Agent (STAND-IN)",
+  "provider": {
+    "organization": "Contoso Mortgage (demo)",
+    "url": "https://github.com/jagadishmazure-jpg"
+  },
+  "skills": [
+    {
+      "description": "Lead record for a borrower. [side-effect: read]",
+      "id": "get_lead",
+      "inputModes": [
+        "application/json"
+      ],
+      "name": "Get lead",
+      "outputModes": [
+        "application/json"
+      ]
+    },
+    {
+      "description": "Queue a follow-up task. [side-effect: write-queued]",
+      "id": "create_task",
+      "inputModes": [
+        "application/json"
+      ],
+      "name": "Create task",
+      "outputModes": [
+        "application/json"
+      ]
+    }
+  ],
+  "supportedInterfaces": [
+    {
+      "protocolBinding": "JSONRPC",
+      "protocolVersion": "1.0",
+      "url": "http://salesforce-crm-standin.local/a2a"
+    }
+  ],
+  "version": "0.1.0"
+}

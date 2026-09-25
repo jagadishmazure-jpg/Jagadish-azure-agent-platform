@@ -1,0 +1,95 @@
+{
+  "capabilities": {
+    "extensions": [
+      {
+        "description": "Control-plane registration: owner, policy, side effects, eval gate",
+        "params": {
+          "agent_id": "sap-erp-standin",
+          "allowed_callers": [
+            "mortgage-underwriting",
+            "erp-agent"
+          ],
+          "eval_score": 0.82,
+          "model_deployment": "",
+          "owner": "platform-demo",
+          "prompt_refs": [],
+          "requires_headers": [
+            "traceparent",
+            "x-tenant-id",
+            "x-caller-agent"
+          ],
+          "side_effect_class": "write-hitl",
+          "skill_side_effects": {
+            "commit_posting": "write-hitl",
+            "get_billing_document": "read",
+            "simulate_posting": "read"
+          },
+          "stage": "staging",
+          "standin": true,
+          "system_of_record": "ERP",
+          "tenants": [
+            "*"
+          ],
+          "vendor_style": "SAP-style"
+        },
+        "uri": "urn:agentplatform:control-plane:v1"
+      }
+    ],
+    "streaming": false
+  },
+  "defaultInputModes": [
+    "application/json"
+  ],
+  "defaultOutputModes": [
+    "application/json"
+  ],
+  "description": "STAND-IN imitating an SAP-style prebuilt finance agent contract (simulate vs commit). Not SAP software.",
+  "name": "SAP-style ERP Agent (STAND-IN)",
+  "provider": {
+    "organization": "Contoso Mortgage (demo)",
+    "url": "https://github.com/jagadishmazure-jpg"
+  },
+  "skills": [
+    {
+      "description": "Billing document for a loan. [side-effect: read]",
+      "id": "get_billing_document",
+      "inputModes": [
+        "application/json"
+      ],
+      "name": "Get billing document",
+      "outputModes": [
+        "application/json"
+      ]
+    },
+    {
+      "description": "Dry-run a GL posting (no commit). [side-effect: read]",
+      "id": "simulate_posting",
+      "inputModes": [
+        "application/json"
+      ],
+      "name": "Simulate posting",
+      "outputModes": [
+        "application/json"
+      ]
+    },
+    {
+      "description": "Commit a GL posting; requires human approval. [side-effect: write-hitl]",
+      "id": "commit_posting",
+      "inputModes": [
+        "application/json"
+      ],
+      "name": "Commit posting",
+      "outputModes": [
+        "application/json"
+      ]
+    }
+  ],
+  "supportedInterfaces": [
+    {
+      "protocolBinding": "JSONRPC",
+      "protocolVersion": "1.0",
+      "url": "http://sap-erp-standin.local/a2a"
+    }
+  ],
+  "version": "0.1.0"
+}

@@ -1,0 +1,52 @@
+{
+  "crm-agent": {
+    "allowed_callers": [
+      "experience-bff",
+      "mortgage-underwriting",
+      "underwriting-agent"
+    ],
+    "stage": "production",
+    "standin": false
+  },
+  "dynamics-crm-standin": {
+    "allowed_callers": [
+      "experience-bff",
+      "mortgage-underwriting"
+    ],
+    "stage": "staging",
+    "standin": true
+  },
+  "erp-agent": {
+    "allowed_callers": [
+      "mortgage-underwriting",
+      "underwriting-agent"
+    ],
+    "stage": "production",
+    "standin": false
+  },
+  "salesforce-crm-standin": {
+    "allowed_callers": [
+      "experience-bff",
+      "mortgage-underwriting"
+    ],
+    "stage": "staging",
+    "standin": true
+  },
+  "sap-erp-standin": {
+    "allowed_callers": [
+      "erp-agent",
+      "mortgage-underwriting"
+    ],
+    "stage": "staging",
+    "standin": true
+  },
+  "underwriting-agent": {
+    "allowed_callers": [
+      "dynamics-crm-standin",
+      "experience-bff",
+      "salesforce-crm-standin"
+    ],
+    "stage": "production",
+    "standin": false
+  }
+}

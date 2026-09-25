@@ -1,0 +1,92 @@
+{
+  "capabilities": {
+    "extensions": [
+      {
+        "description": "Control-plane registration: owner, policy, side effects, eval gate",
+        "params": {
+          "agent_id": "underwriting-agent",
+          "allowed_callers": [
+            "experience-bff",
+            "salesforce-crm-standin",
+            "dynamics-crm-standin"
+          ],
+          "eval_score": 0.93,
+          "model_deployment": "gpt-5-mini",
+          "owner": "mortgage-credit-policy",
+          "prompt_refs": [
+            "mortgage.conditions@1.0.0",
+            "mortgage.critic@1.0.0",
+            "mortgage.decision_letter@1.0.0"
+          ],
+          "requires_headers": [
+            "traceparent",
+            "x-tenant-id",
+            "x-caller-agent"
+          ],
+          "side_effect_class": "write-queued",
+          "skill_side_effects": {
+            "get_status": "read",
+            "submit_loan_file": "write-queued"
+          },
+          "stage": "production",
+          "standin": false,
+          "system_of_record": "LOS",
+          "tenants": [
+            "*"
+          ],
+          "vendor_style": ""
+        },
+        "uri": "urn:agentplatform:control-plane:v1"
+      }
+    ],
+    "streaming": false
+  },
+  "defaultInputModes": [
+    "application/json"
+  ],
+  "defaultOutputModes": [
+    "application/json"
+  ],
+  "description": "Custom domain agent exposing the mortgage underwriting-conditions graph (MAF) over A2A.",
+  "name": "Underwriting Agent",
+  "provider": {
+    "organization": "Contoso Mortgage (demo)",
+    "url": "https://github.com/jagadishmazure-jpg"
+  },
+  "skills": [
+    {
+      "description": "Start underwriting; returns the HITL review packet (all writes are HITL-gated in the graph). [side-effect: write-queued]",
+      "id": "submit_loan_file",
+      "inputModes": [
+        "application/json"
+      ],
+      "name": "Submit loan file",
+      "outputModes": [
+        "application/json"
+      ],
+      "tags": [
+        "mortgage",
+        "underwriting"
+      ]
+    },
+    {
+      "description": "Status of an underwriting run. [side-effect: read]",
+      "id": "get_status",
+      "inputModes": [
+        "application/json"
+      ],
+      "name": "Get run status",
+      "outputModes": [
+        "application/json"
+      ]
+    }
+  ],
+  "supportedInterfaces": [
+    {
+      "protocolBinding": "JSONRPC",
+      "protocolVersion": "1.0",
+      "url": "http://underwriting-agent.local/a2a"
+    }
+  ],
+  "version": "1.0.0"
+}

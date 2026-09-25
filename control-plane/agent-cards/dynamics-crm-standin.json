@@ -1,0 +1,83 @@
+{
+  "capabilities": {
+    "extensions": [
+      {
+        "description": "Control-plane registration: owner, policy, side effects, eval gate",
+        "params": {
+          "agent_id": "dynamics-crm-standin",
+          "allowed_callers": [
+            "mortgage-underwriting",
+            "experience-bff"
+          ],
+          "eval_score": 0.8,
+          "model_deployment": "",
+          "owner": "platform-demo",
+          "prompt_refs": [],
+          "requires_headers": [
+            "traceparent",
+            "x-tenant-id",
+            "x-caller-agent"
+          ],
+          "side_effect_class": "write-queued",
+          "skill_side_effects": {
+            "create_activity": "write-queued",
+            "get_contact": "read"
+          },
+          "stage": "staging",
+          "standin": true,
+          "system_of_record": "CRM",
+          "tenants": [
+            "*"
+          ],
+          "vendor_style": "Dynamics 365-style"
+        },
+        "uri": "urn:agentplatform:control-plane:v1"
+      }
+    ],
+    "streaming": false
+  },
+  "defaultInputModes": [
+    "application/json"
+  ],
+  "defaultOutputModes": [
+    "application/json"
+  ],
+  "description": "STAND-IN imitating a Dynamics 365-style prebuilt CRM agent contract. Not Microsoft software.",
+  "name": "Dynamics 365-style CRM Agent (STAND-IN)",
+  "provider": {
+    "organization": "Contoso Mortgage (demo)",
+    "url": "https://github.com/jagadishmazure-jpg"
+  },
+  "skills": [
+    {
+      "description": "Contact record by borrower id. [side-effect: read]",
+      "id": "get_contact",
+      "inputModes": [
+        "application/json"
+      ],
+      "name": "Get contact",
+      "outputModes": [
+        "application/json"
+      ]
+    },
+    {
+      "description": "Queue a phone-call activity. [side-effect: write-queued]",
+      "id": "create_activity",
+      "inputModes": [
+        "application/json"
+      ],
+      "name": "Create activity",
+      "outputModes": [
+        "application/json"
+      ]
+    }
+  ],
+  "supportedInterfaces": [
+    {
+      "protocolBinding": "JSONRPC",
+      "protocolVersion": "1.0",
+      "url": "http://dynamics-crm-standin.local/a2a"
+    }
+  ],
+  "version": "0.1.0"
+}
