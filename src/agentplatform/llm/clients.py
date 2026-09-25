@@ -20,11 +20,11 @@ Script = Callable[[list[Message], dict[str, Any]], ChatResponse | None]
 
 def _json_block(text: str) -> dict | None:
     """Pull the first JSON object out of a prompt (executors send facts + a deterministic draft)."""
-    m = re.search(r"\{.*\}", text, re.S)
+    m = re.search(r"```json\s*(\{.*?\})\s*```", text, re.S) or re.search(r"(\{.*\})", text, re.S)
     if not m:
         return None
     try:
-        return json.loads(m.group(0))
+        return json.loads(m.group(1))
     except json.JSONDecodeError:
         return None
 

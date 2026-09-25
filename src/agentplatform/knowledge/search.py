@@ -61,6 +61,10 @@ class Chunk:
     guideline_id: str = ""
     version: str = ""
     program: str = ""
+    params: tuple[tuple[str, object], ...] = ()  # machine-readable rule parameters (Search: params_json)
+
+    def param(self, key: str, default: object = None) -> object:
+        return dict(self.params).get(key, default)
 
     def in_force(self, as_of: date) -> bool:
         return self.effective_from <= as_of and (self.effective_to is None or as_of <= self.effective_to)
@@ -101,6 +105,7 @@ def load_corpus(name: str = "guidelines") -> list[Chunk]:
             guideline_id=c.get("guideline_id", c["id"]),
             version=c.get("version", ""),
             program=c.get("program", ""),
+            params=tuple(sorted((c.get("params") or {}).items())),
         )
         for c in raw
     ]
@@ -216,6 +221,7 @@ class AzureAISearchBackend:
         "effective_to",
         "allowed_groups",
         "program",
+        "params_json",
     )
 
     def __init__(self, index_name: str, settings: Settings | None = None) -> None:
@@ -255,6 +261,7 @@ class AzureAISearchBackend:
                     guideline_id=r.get("guideline_id", r["id"]),
                     version=r.get("version", ""),
                     program=r.get("program", ""),
+                    params=tuple(sorted(json.loads(r.get("params_json") or "{}").items())),
                 )
                 hits.append(SearchHit(chunk, r["@search.score"], r.get("@search.reranker_score") or 0.0))
             return hits

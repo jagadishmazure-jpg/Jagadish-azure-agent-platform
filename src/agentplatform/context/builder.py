@@ -56,6 +56,46 @@ class ContextPack:
                 out |= {i.source_id, i.meta.get("guideline_id", i.source_id)}
         return out
 
+    def rule(self, guideline_id: str) -> dict[str, Any] | None:
+        """Machine-readable parameters of the in-force version of a guideline family, if packed."""
+        for i in self.items:
+            if i.kind == "guideline" and i.meta.get("guideline_id") == guideline_id:
+                return {"chunk_id": i.source_id, **i.meta.get("params", {})}
+        return None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "as_of": self.as_of.isoformat(),
+            "items": [
+                {"source_id": i.source_id, "kind": i.kind, "text": i.text, "meta": i.meta} for i in self.items
+            ],
+            "dropped": [list(d) for d in self.dropped],
+            "queries": list(self.queries),
+            "limited": self.limited,
+            "tokens_used": dict(self.tokens_used),
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> ContextPack:
+        return cls(
+            as_of=date.fromisoformat(d["as_of"]),
+            items=[
+                EvidenceItem(i["source_id"], i["kind"], i["text"], i.get("meta", {}))
+                for i in d.get("items", [])
+            ],
+            dropped=[tuple(x) for x in d.get("dropped", [])],
+            queries=list(d.get("queries", [])),
+            limited=bool(d.get("limited")),
+            tokens_used=dict(d.get("tokens_used", {})),
+        )
+
+    def merge(self, other: ContextPack) -> None:
+        have = set(self.ids())
+        self.items += [i for i in other.items if i.source_id not in have]
+        self.dropped += other.dropped
+        self.queries += other.queries
+        self.limited = self.limited or other.limited
+
     def render(self) -> str:
         lines = [f"# Evidence pack (as of {self.as_of.isoformat()}){' [LIMITED]' if self.limited else ''}"]
         for i in self.items:
@@ -158,6 +198,7 @@ class ContextBuilder:
                     {
                         "guideline_id": c.guideline_id,
                         "version": c.version,
+                        "params": dict(c.params),
                         "effective_from": c.effective_from.isoformat(),
                         "effective_to": c.effective_to.isoformat() if c.effective_to else None,
                     },
