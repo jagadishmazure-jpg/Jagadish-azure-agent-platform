@@ -249,7 +249,8 @@ class AzureAISearchBackend:
             hits = []
             for r in results:
                 chunk = Chunk(
-                    id=r["id"],
+                    # index keys can't contain '.', so the citation id is rebuilt from guideline_id + version
+                    id=f"{r['guideline_id']}.{r['version']}" if r.get("version") else r["id"],
                     title=r["title"],
                     section=r.get("section", ""),
                     content=r["content"],

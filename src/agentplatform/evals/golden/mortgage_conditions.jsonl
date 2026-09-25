@@ -1,0 +1,4 @@
+{"id": "mc-001", "loan_id": "L-1001", "groups": ["underwriting"], "expected_recommendation": "approved_with_conditions", "must_include": ["C-INC-VVOE", "C-AST-LD1", "C-CR-INQ", "C-PRP-APR"], "must_exclude": ["C-OVL-INV"]}
+{"id": "mc-002", "loan_id": "L-1002", "groups": ["underwriting"], "expected_recommendation": "referred", "must_include": ["C-INC-LOE", "C-DOC-L-1002-bank"], "must_exclude": []}
+{"id": "mc-003", "loan_id": "L-1003", "groups": ["underwriting"], "expected_recommendation": "approved_with_conditions", "must_include": ["C-CAP-RSV", "C-CR-BK", "C-PRP-NAL"], "must_exclude": ["C-OVL-INV"]}
+{"id": "mc-004", "loan_id": "L-1003", "groups": ["underwriting", "underwriting-senior"], "expected_recommendation": "approved_with_conditions", "must_include": ["C-OVL-INV", "C-CAP-RSV"], "must_exclude": []}

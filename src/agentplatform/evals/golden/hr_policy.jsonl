@@ -1,0 +1,5 @@
+{"id": "hr-001", "query": "How many weeks of parental leave do I get?", "as_of": "2026-03-01", "groups": ["employees"], "expected_citations": ["HR-PAR-02"], "must_contain": "16 weeks"}
+{"id": "hr-002", "query": "How many weeks of parental leave do I get?", "as_of": "2024-06-01", "groups": ["employees"], "expected_citations": ["HR-PAR-01"], "must_contain": "12 weeks"}
+{"id": "hr-003", "query": "How many PTO days do I accrue per month?", "as_of": "2026-03-01", "groups": ["employees"], "expected_citations": ["HR-PTO-01"], "must_contain": "1.5 days"}
+{"id": "hr-004", "query": "How many days can I work remotely?", "as_of": "2026-03-01", "groups": ["employees"], "expected_citations": ["HR-RMT-03"], "must_contain": "three days"}
+{"id": "hr-005", "query": "What are the salary band ranges?", "as_of": "2026-03-01", "groups": ["employees"], "expected_citations": [], "must_contain": "HR"}
