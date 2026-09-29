@@ -1,6 +1,7 @@
 # `docs/`: design and operations documents
 
-Longer-form documentation that backs up the root README: the four-plane architecture, how the
+Longer-form documentation that backs up the root README: the four-plane architecture, the
+multi-agent orchestration pattern comparison, how the
 engineering layers map to code, the generated five-exit failure table, the deployment path,
 the billing model per resource (with no price figures on purpose) and notes on which SDK
 versions and API shapes were verified.
@@ -12,6 +13,7 @@ versions and API shapes were verified.
 | [`deploy.md`](deploy.md) | The intended `azd` deployment path, prerequisites and OIDC setup for `deploy.yml`. States up front that nothing has been deployed. |
 | [`engineering-layers.md`](engineering-layers.md) | Prompt, context, workflow, agent, graph, loop, harness and platform layers mapped to modules and to the tests that cover them. |
 | [`failure-table.md`](failure-table.md) | Five-exit table (success, retry, compensate, degrade, escalate) per mortgage graph node. **Generated** from `agentplatform.harness.failure.FAILURE_TABLE` by `scripts/render_docs.py`; do not edit by hand. |
+| [`orchestration-patterns.md`](orchestration-patterns.md) | MAF's five prebuilt orchestrations (sequential, concurrent, handoff, group chat, Magentic) on one loan conditions review: the builders and options used, a **generated** comparison and fault-drill table (`scripts/orchestrations_demo.py --compare --write`), and when to choose which. |
 | [`sdk-notes.md`](sdk-notes.md) | What was checked against the real packages (Agent Framework, azure-ai-projects, a2a-sdk, mcp, Search, Document Intelligence, Content Safety, evaluation) and where the code differs from earlier assumptions. |
 
 ## Regenerate the failure table

@@ -21,6 +21,7 @@ default; `AAP_MODE=azure` swaps each adapter for its Azure service, in one place
 | [`llm/`](llm/README.md) | Chat clients: deterministic MAF mock offline, Foundry with fallback deployment on Azure. |
 | [`mcp_servers/`](mcp_servers/README.md) | Credit bureau and LOS MCP servers plus the tool gateway. |
 | [`mortgage/`](mortgage/README.md) | The flagship MAF workflow for mortgage underwriting conditions. |
+| [`orchestrations/`](orchestrations/README.md) | MAF's five prebuilt multi-agent orchestrations (sequential, concurrent, handoff, group chat, Magentic) on a loan conditions review, with a measured comparison. |
 | [`prompts/`](prompts/README.md) | Versioned prompt pack bound to output schemas. |
 | [`safety/`](safety/README.md) | Content Safety and Prompt Shields gate. |
 | [`single/`](single/README.md) | Single-agent examples: HR policy and IT service desk. |
@@ -41,5 +42,5 @@ harness/ wraps every node: identity + traceparent, budgets, kill switch, retry/b
 ```bash
 uvicorn agentplatform.bff:app --port 8080       # in-process BFF (offline mocks)
 curl -X POST localhost:8080/loans/L-1001/underwrite
-pytest -q                                       # 70 offline tests
+pytest -q                                       # 106 offline tests
 ```

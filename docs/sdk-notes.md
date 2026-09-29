@@ -11,6 +11,7 @@ follows reality and the difference is called out.
 |---|---|---|
 | `agent-framework-core` | 1.19.0 | Microsoft Agent Framework (MAF) Python core: `Agent`, `WorkflowBuilder`, `Executor`, `@handler`, `@response_handler`, checkpoints. |
 | `agent-framework-foundry` | 1.13.1 | `FoundryChatClient`, `FoundryAgent`, `FoundryEvals`. **Replaces** `agent-framework-azure-ai`, whose last release is `1.0.0rc6` (2026-03). |
+| `agent-framework-orchestrations` | 1.2.0 | Prebuilt `SequentialBuilder`, `ConcurrentBuilder`, `HandoffBuilder`, `GroupChatBuilder`, `MagenticBuilder` (requires `agent-framework-core>=1.19.0,<2`). **Separate package**: `agent_framework.orchestrations` in core is only a lazy re-export shim and fails at import time without it. Verified 2026-09-29. |
 | `agent-framework-azure-cosmos` | 1.0.0b260918 | `CosmosCheckpointStorage` (partition key `/workflow_name`), `CosmosHistoryProvider`. Beta. |
 | `azure-ai-projects` | 2.6.1 | Foundry project SDK. 2.7.0 exists, but `agent-framework-foundry 1.13.1` pins `<2.7`, so 2.6.1 is the newest that resolves. |
 | `azure-ai-evaluation` | 1.18.7 | `GroundednessEvaluator`, `RelevanceEvaluator`, `evaluate()`. (optional `[eval]` extra) |
@@ -38,6 +39,41 @@ Agent Service surface used here is `azure-ai-projects` 2.x (`project.agents.crea
   * `WorkflowRunResult.get_outputs()`, `.get_request_info_events()`, `.get_final_state()`.
 * Tool approval: `@tool(approval_mode="always_require")`. The run returns `response.user_input_requests` (function-approval request contents); reply with `req.to_function_approval_response(approved=bool)` in a user `Message` on the **same `AgentSession`**. Verified: a denied reset never executes the tool; an approved one executes exactly once. MAF 1.19 logs one benign "Ignored an approval response ... did not match the active approval occurrence identity" warning per resumed turn in this flow; the result is still correct.
 * `FoundryChatClient(project_endpoint=..., model=..., credential=...)` reads `FOUNDRY_PROJECT_ENDPOINT` and `FOUNDRY_MODEL`.
+
+## MAF prebuilt orchestrations (`agent-framework-orchestrations` 1.2.0, verified by running code)
+
+Used by `src/agentplatform/orchestrations/`, with every behaviour below covered in `tests/test_orchestrations.py`.
+Import from `agent_framework.orchestrations`.
+
+* **Sequential.** `SequentialBuilder(*, participants, name=None, checkpoint_storage=None, chain_only_agent_responses=False, output_from=..., intermediate_output_from=None)`.
+  * The workflow output is **only the last participant's `AgentResponse`**, not the whole conversation.
+  * `.with_request_info(agents=[names])` pauses **after** each named agent answers. The request payload is an `AgentExecutorResponse` (`executor_id`, `agent_response`, `full_conversation`).
+  * Reply `AgentRequestInfoResponse.approve()` to accept, or `.from_strings([...])` / `.from_messages([...])` to send feedback. Feedback re-runs the agent, which pauses again.
+* **Concurrent.** `ConcurrentBuilder(*, participants, ...)`, then `.with_aggregator(callback | Executor)`.
+  * The callback gets `list[AgentExecutorResponse]` (optionally also `ctx`), and its return value becomes the workflow output.
+* **Handoff.** `HandoffBuilder(*, participants, name, description, checkpoint_storage, termination_condition)` with `.with_start_agent(agent)` (required: `build()` raises without it), `.add_handoff(source, [targets])`, `.with_termination_condition(fn(list[Message]) -> bool)`, `.with_autonomous_mode(...)` and `.with_checkpointing(...)`.
+  * **Surprise:** participants must be real `Agent` objects built with **`require_per_service_call_history_persistence=True`**, or `build()` raises `ValueError`. This is not mentioned in the class docstring.
+  * Routing tools are injected as `handoff_to_<agent name>`. A model hands off by calling one, and the call is short-circuited by middleware (a `handoff_sent` event with `HandoffSentEvent(source, target)`).
+  * The receiving agent sees the cleaned conversation: text is kept, tool-call plumbing is stripped.
+  * In non-autonomous mode, an agent that answers **without** handing off pauses the run with `HandoffAgentUserRequest`. Answer it with `HandoffAgentUserRequest.create_response(text)` or `.terminate()`.
+  * Agents with no outgoing handoff log "No handoff configuration found ... may get stuck". This is benign for a terminal agent paired with a termination condition.
+* **Group chat.** `GroupChatBuilder(*, participants, selection_func | orchestrator_agent | orchestrator (exactly one), termination_condition, max_rounds, checkpoint_storage, output_from, intermediate_output_from)`.
+  * `selection_func(GroupChatState) -> name`, where `GroupChatState` has `current_round`, `participants` and `conversation`.
+  * An `orchestrator_agent` must reply with `AgentOrchestrationOutput` JSON (`terminate`, `reason`, `next_speaker`, `final_message`; `extra="forbid"`), and costs one model call per round.
+  * **Surprise:** by default the workflow output is **only the orchestrator's completion message**, for example "The group chat has reached its termination condition." or "... maximum number of rounds." Pass `output_from="all"` to receive participants' responses.
+  * Hitting `max_rounds` logs "forcing completion" and yields that message rather than raising.
+* **Magentic.** `MagenticBuilder(*, participants (non-empty names), manager_agent | manager | manager_factory | manager_agent_factory, enable_plan_review=False, max_round_count, max_stall_count=3, max_reset_count, checkpoint_storage, output_from, ...)`.
+  * A `manager_agent` is wrapped in `StandardMagenticManager`, which drives it with its own prompts: facts ("Below I will present you a request..."), plan, a JSON progress ledger (`is_request_satisfied`, `is_in_loop`, `is_progress_being_made`, `next_speaker`, `instruction_or_question`, each `{reason, answer}`) and the final answer.
+  * A custom manager subclasses `MagenticManagerBase` (`plan`, `replan`, `create_progress_ledger`, `prepare_final_answer`).
+  * Plan review pauses with `MagenticPlanReviewRequest` (`plan`, `current_progress`, `is_stalled`). Answer with `.approve()` or `.revise(feedback)`.
+  * A reset happens when `stall_count > max_stall_count` (strictly greater). **A reset clears the chat history and re-fires plan review**, so any evidence that a worker failed is gone unless the manager carries it forward in its plan or instruction.
+  * Hitting round or reset caps yields "Workflow terminated due to reaching maximum round/reset count." as the output; nothing is raised.
+  * Events: `magentic_orchestrator` with `MagenticOrchestratorEvent(event_type=PLAN_CREATED | REPLANNED | PROGRESS_LEDGER_UPDATED, ...)`, and `group_chat` with `GroupChatRequestSentEvent` / `GroupChatResponseReceivedEvent`.
+  * **Docstring drift:** the `MagenticBuilder` docstring still mentions `.with_human_input_on_stall()` and `MagenticHumanInterventionRequest/Kind`. Neither exists in 1.2.0; plan review is the only built-in HITL hook.
+* **Common.**
+  * `WorkflowRunResult.get_request_info_events()` returns the pauses, and `workflow.run(responses={request_id: answer})` resumes.
+  * Checkpointed builders resume in a fresh instance with `run(checkpoint_id=latest.checkpoint_id, checkpoint_storage=...)`, which re-surfaces the pending request.
+  * Sequential and concurrent log a benign "Dead-end executors detected" warning at build time.
 
 ## Foundry Agent Service via `azure-ai-projects` 2.6.1
 

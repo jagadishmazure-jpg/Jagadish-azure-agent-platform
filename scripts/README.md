@@ -10,6 +10,7 @@ The Azure-facing scripts have `--dry-run` modes that run fully offline.
 | [`demo.py`](demo.py) | Offline end-to-end demo: underwrites L-1001, L-1002 and L-1003, approves at the HITL gate and prints the letters (`make demo`). |
 | [`export_agent_cards.py`](export_agent_cards.py) | Writes `control-plane/agent-cards/*.json` and `_policy.json` from the catalog; `--check` exits 1 if any checked-in card is stale (`make cards`, CI). |
 | [`foundry_register.py`](foundry_register.py) | Registers the single agents in Foundry Agent Service (azure-ai-projects 2.x). `--dry-run` (default) prints definitions offline; `--apply` creates a new version of each agent; `--invoke <agent> "question"` calls one. Needs `FOUNDRY_PROJECT_ENDPOINT`, `AZURE_SEARCH_CONNECTION` and the Azure AI User role for non-dry runs. |
+| [`orchestrations_demo.py`](orchestrations_demo.py) | Offline transcripts of the five MAF orchestration patterns (`--loan`, `--pattern`). `--compare` prints the pattern comparison and fault drills, `--write` refreshes `docs/orchestration-patterns.md`, and `--check` exits 1 if that doc is stale. |
 | [`postprovision.sh`](postprovision.sh) | azd `postprovision` hook: sets `AAP_MODE=azure`, installs the `eval` extra, seeds AI Search, registers Foundry agents and runs the eval gate. |
 | [`render_docs.py`](render_docs.py) | Regenerates `docs/failure-table.md` from `FAILURE_TABLE` (single source of truth). |
 | [`run_evals.py`](run_evals.py) | Golden-set evals and release gate (`make evals`): offline deterministic evaluators by default, exit 1 on regression; `--azure` also scores with azure-ai-evaluation and logs to the Foundry project; `--out DIR` writes eval rows. |
@@ -20,6 +21,7 @@ The Azure-facing scripts have `--dry-run` modes that run fully offline.
 
 ```bash
 python scripts/demo.py
+python scripts/orchestrations_demo.py --compare --check
 python scripts/run_evals.py --out evals-out
 python scripts/export_agent_cards.py --check
 python scripts/render_docs.py
