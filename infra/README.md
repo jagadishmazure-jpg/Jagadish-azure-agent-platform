@@ -11,6 +11,7 @@ the default `cost-min` profile picks the cheapest SKUs that still exercise every
 | [`main.bicep`](main.bicep) | Entry point. Parameters include `environmentName`, `location`, `principalId`, `costProfile` (`cost-min` | `standard`), `privateLink`, `deployVendorStandins`, model names/versions/capacity and optional SKU overrides. Composes identity, monitoring, optional network, AI Search, Foundry, Document Intelligence, Content Safety, Cosmos DB, Service Bus, Key Vault, ACR, RBAC, private endpoints, the Container Apps environment, one Container App per service and APIM. Outputs the env vars the app reads (`FOUNDRY_PROJECT_ENDPOINT`, `AZURE_SEARCH_ENDPOINT`, `AZURE_COSMOS_ENDPOINT`, `BFF_URL`, ...). |
 | [`main.parameters.json`](main.parameters.json) | azd parameter file: maps azd environment values (`${AZURE_ENV_NAME}`, `${AZURE_LOCATION}`, `${AZURE_PRINCIPAL_ID}`) and optional `AAP_*` overrides with defaults (`AAP_COST_PROFILE=cost-min`, `AAP_PRIVATE_LINK=false`, `AAP_DEPLOY_STANDINS=false`, chat model, APIM publisher, Entra tenant/audience) to Bicep parameters. |
 | [`modules/`](modules/README.md) | One Bicep module per resource type. |
+| [`terraform/`](terraform/README.md) | The same infrastructure in Terraform (`azurerm` + `azapi`), with CAF names, dev/prod tfvars, a partial remote-state backend and offline plan tests. Read its README for when to pick which tool. |
 
 ## Profiles
 

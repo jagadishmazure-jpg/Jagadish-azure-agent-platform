@@ -44,14 +44,9 @@ curl -X POST "$APIM_GATEWAY_URL/agents/loans/L-1001/underwrite" -H "Ocp-Apim-Sub
 * **Global:** in APIM, set the named value `agents-enabled` to `false`. Every call then returns 503.
 * **Per agent:** `POST /directory/{agent}/kill` on the BFF (requires the `platform-admins` group). In this sample the directory state is per replica. Production would back it with Cosmos or App Configuration.
 
-## CI/CD with OIDC (disabled by default)
+## CI/CD with GitHub Actions and OIDC (disabled by default)
 
-`.github/workflows/deploy.yml` runs only on `workflow_dispatch`, and only when the repository variable `ENABLE_DEPLOY` is `true`. To set it up:
-
-1. Create an app registration (or a user-assigned MI) with a **federated credential** for subject `repo:jagadishmazure-jpg/Jagadish-azure-agent-platform:environment:dev`.
-2. Grant it Contributor, plus RBAC Administrator constrained to the roles in `infra/modules/roles.bicep`, on the subscription.
-3. Add the repository variables `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, and `ENABLE_DEPLOY=true`. No secrets are stored.
-4. Run the workflow. Its `teardown` input runs `azd down --purge`.
+The pipeline lives in [`deployment.md`](deployment.md): pull-request checks for the Terraform stack, a `deploy.yml` workflow that goes dev -> prod through GitHub Environments with required reviewers, a `deploy_tool` input (`bicep` or `terraform`), OIDC login with federated credentials (no secrets), smoke tests and a manual `teardown.yml`. Every deploy job is gated behind the repository variable `DEPLOY_ENABLED`, which is not set, so nothing runs against Azure. `azd up` below remains the laptop path.
 
 ## Private networking
 

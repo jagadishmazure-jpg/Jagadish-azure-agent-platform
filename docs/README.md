@@ -10,7 +10,8 @@ versions and API shapes were verified.
 |---|---|
 | [`architecture.md`](architecture.md) | Four planes (experience, agent, knowledge, data): what changes on each, where it lives in the repo and which Azure service hosts it. |
 | [`cost-estimate.md`](cost-estimate.md) | Resources, SKUs and billing dimensions for the `cost-min` and `standard` profiles. Deliberately contains no dollar amounts; links to official pricing pages and the calculator. |
-| [`deploy.md`](deploy.md) | The intended `azd` deployment path, prerequisites and OIDC setup for `deploy.yml`. States up front that nothing has been deployed. |
+| [`deploy.md`](deploy.md) | The laptop `azd up` path: prerequisites, profiles, kill switches, private networking, teardown. States up front that nothing has been deployed. |
+| [`deployment.md`](deployment.md) | GitHub Actions pipeline: mermaid diagram, PR checks, dev -> prod with approval gates, Bicep or Terraform, OIDC federated-credential setup, smoke tests, teardown, and what a forward deployed engineer would do at a client. |
 | [`engineering-layers.md`](engineering-layers.md) | Prompt, context, workflow, agent, graph, loop, harness and platform layers mapped to modules and to the tests that cover them. |
 | [`failure-table.md`](failure-table.md) | Five-exit table (success, retry, compensate, degrade, escalate) per mortgage graph node. **Generated** from `agentplatform.harness.failure.FAILURE_TABLE` by `scripts/render_docs.py`; do not edit by hand. |
 | [`orchestration-patterns.md`](orchestration-patterns.md) | MAF's five prebuilt orchestrations (sequential, concurrent, handoff, group chat, Magentic) on one loan conditions review: the builders and options used, a **generated** comparison and fault-drill table (`scripts/orchestrations_demo.py --compare --write`), and when to choose which. |

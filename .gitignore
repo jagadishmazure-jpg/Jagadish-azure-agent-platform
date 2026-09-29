@@ -12,3 +12,12 @@ dist/
 build/
 infra/**/*.json
 !infra/main.parameters.json
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+backend_override.tf
