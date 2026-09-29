@@ -10,6 +10,7 @@ requires-python = ">=3.11"
 dependencies = [
   "agent-framework-core==1.19.0",
   "agent-framework-foundry==1.13.1",
+  "agent-framework-orchestrations==1.2.0",  # prebuilt Sequential/Concurrent/Handoff/GroupChat/Magentic
   "agent-framework-azure-cosmos==1.0.0b260918",
   "azure-ai-projects==2.6.1",            # agent-framework-foundry 1.13.1 requires <2.7
   "azure-search-documents==12.0.0",
