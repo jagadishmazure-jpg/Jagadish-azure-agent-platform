@@ -127,7 +127,7 @@ sequenceDiagram
 | **Safety** | Content Safety runs on inbound text and on retrieved passages. Prompt Shields (REST) catches injection. The context builder also drops injected passages offline. |
 | **Harness** | Identity envelope, budgets (steps, tokens, identical-call caps), kill switch, retry with circuit breaker, outbox, and OpenTelemetry. Traces go to Azure Monitor when `APPLICATIONINSIGHTS_CONNECTION_STRING` is set, and to the console otherwise. |
 | **Infra** (`infra/`, `azure.yaml`) | Bicep for `azd up`: Foundry account and project with model deployments, AI Search, Document Intelligence, Content Safety, Container Apps (6 apps), APIM, Cosmos serverless, Service Bus, Key Vault, ACR, Log Analytics and App Insights. Two least-privilege managed identities. Optional Private Link. `cost-min` is the default profile. |
-| **Engineering layers** | Prompt → context → workflow → agent → graph → loop → harness → platform. See [docs/engineering-layers.md](docs/engineering-layers.md). |
+| **Engineering layers** | Eight layers stacked from the bottom up: prompts and context at the base, then workflows, agents and graphs, then loops, the runtime harness, and finally the platform. See [docs/engineering-layers.md](docs/engineering-layers.md). |
 
 ## Industry mapping
 
