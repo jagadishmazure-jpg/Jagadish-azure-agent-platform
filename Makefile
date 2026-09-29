@@ -1,4 +1,4 @@
-.PHONY: install lint test evals cards bicep demo mesh compose foundry-dry-run seed-dry-run
+.PHONY: install lint test evals cards bicep demo orchestrations mesh compose foundry-dry-run seed-dry-run
 install:          ## venv + dev extras
 	python -m venv .venv && . .venv/bin/activate && pip install -e ".[dev]"
 lint:
@@ -13,6 +13,8 @@ bicep:
 	az bicep build --file infra/main.bicep --stdout > /dev/null
 demo:             ## in-process demo: three loans end to end
 	python scripts/demo.py
+orchestrations:   ## five MAF orchestration patterns + comparison (offline)
+	python scripts/orchestrations_demo.py && python scripts/orchestrations_demo.py --compare
 mesh:             ## every service as its own process over HTTP (no Docker)
 	./scripts/run_local_mesh.sh
 compose:
