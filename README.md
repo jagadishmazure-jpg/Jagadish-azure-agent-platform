@@ -1,5 +1,17 @@
 # azure-agent-platform
 
+## At a glance (for recruiters)
+
+- **Multi-agent mortgage underwriting on Azure:** agents read the loan documents (pay stubs, W-2s, bank statements), run income, credit and guideline checks in parallel, review assets, have a critic agent verify every condition cites a guideline, then pause for a human underwriter's approval before issuing the decision letter.
+- **Survives crashes:** the workflow checkpoints its state, so a restarted process resumes the loan where it left off instead of starting over (covered by tests).
+- **Governed agent-to-agent (A2A) calls:** CRM, ERP and underwriting agents publish agent cards; a directory controls who may call whom, requires an eval score before promotion, and has a kill switch.
+- **All five Microsoft Agent Framework built-in orchestrations** (sequential, concurrent, handoff, group chat, Magentic) run on the same loan review and are compared side by side.
+- **Deployable, cost-minimized infrastructure:** Bicep templates for `azd up` (cost-min profile by default); 106 automated tests plus eval release gates run in CI.
+
+**Skills demonstrated:** Azure AI Foundry, Microsoft Agent Framework, Azure OpenAI, Azure AI Search, Document Intelligence, Content Safety, MCP, A2A, Bicep/azd, Container Apps, APIM, Cosmos DB, Service Bus, Python.
+
+*Honesty note: it runs fully offline with deterministic mocks and has not been deployed to live Azure yet (see [Honest limitations](#honest-limitations)).*
+
 An Azure-native agentic AI platform showcase: a **mortgage loan origination and underwriting-conditions multi-agent system** built on **Microsoft Agent Framework (MAF) 1.x** and **Microsoft Foundry**, plus:
 
 * an **A2A agent control plane**
