@@ -1,0 +1,48 @@
+# Best practices: what is implemented and what is planned
+
+A checklist of enterprise cloud and agentic AI practices for this repo. Each row links to the code that implements it and says honestly whether it is implemented, written but not deployed, or planned. Nothing here has been deployed to Azure.
+
+**How to read the status column**
+
+- **Implemented**: the code is in this repo and runs in the offline tests or in CI.
+- **Written, not deployed**: the infrastructure or workflow code exists and passes validation (`bicep build`, `terraform validate` and `terraform test`, tflint, checkov, actionlint), but it has never run against a real Azure subscription.
+- **Planned**: not in the repo yet. The note says what is missing.
+
+## Enterprise cloud
+
+| Practice | What this repo does | Status | Where |
+|---|---|---|---|
+| **Identity: OIDC and managed identity** | CI signs in with `azure/login` over OIDC (no client secret). The BFF, A2A and MCP apps run as user-assigned managed identities, and the Azure code paths use `DefaultAzureCredential`. | Written, not deployed | [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml), [`identity module`](../infra/terraform/modules/identity/README.md), [`src/agentplatform/config.py`](../src/agentplatform/config.py), [ADR 0003](adr/0003-oidc-and-managed-identity.md) |
+| **Least privilege** | Two identities with role assignments scoped to single resources (for example Search Index Data Reader, Cognitive Services OpenAI User, AcrPull, Service Bus sender) instead of subscription-wide roles. Local (key) auth is off on the AI services. | Written, not deployed | [`infra/terraform/roles.tf`](../infra/terraform/roles.tf), [`infra/modules/roles.bicep`](../infra/modules/roles.bicep) |
+| **Networking** | Dev uses public endpoints with Entra ID auth to keep cost down. Prod turns on a VNet with NSGs and private endpoints for the data and AI services (`private_link = true`). | Written, not deployed | [`network`](../infra/terraform/modules/network/README.md), [`private-endpoint`](../infra/terraform/modules/private-endpoint/README.md), [`infra/terraform/envs/prod.tfvars`](../infra/terraform/envs/prod.tfvars) |
+| **Secrets** | No secrets in the repo or in CI. Key Vault in RBAC mode (purge protection in prod) holds anything that cannot use Entra ID. Secret scanning in CI is not set up yet. | Written, not deployed; CI scanning planned | [`keyvault module`](../infra/terraform/modules/keyvault/README.md), [`.env.example`](../.env.example) |
+| **Tagging and naming** | CAF names (`rg-agentplat-dev-eus2-001`) and six required tags (`env`, `owner`, `project`, `cost-center`, `workload`, `managed-by`), checked by `terraform test`. | Implemented (tests); written, not deployed | [`naming module`](../infra/terraform/modules/naming/README.md), [`plan tests`](../infra/terraform/tests/README.md) |
+| **Cost controls** | `cost-min` is the default: scale-to-zero apps, serverless Cosmos, Consumption APIM, pay-per-call AI and a daily log cap. Billing dimensions link to official pricing; no invented prices. Budgets and cost alerts are not defined yet. | Written, not deployed; budgets planned | [`docs/cost-estimate.md`](../docs/cost-estimate.md), [`infra/terraform/envs/dev.tfvars`](../infra/terraform/envs/dev.tfvars) |
+| **Infrastructure as code** | Bicep for `azd` and a Terraform twin of the same resources. CI builds the Bicep with no warnings and runs fmt, validate, offline `terraform test`, tflint and checkov on the Terraform. | Implemented | [`infra/`](../infra/README.md), [`.github/workflows/infra.yml`](../.github/workflows/infra.yml), [ADR 0001](adr/0001-bicep-and-terraform.md) |
+| **CI/CD gates** | Lint, 106 tests, agent-card drift and the eval gate on every push; Terraform checks and image builds on every change; deploy goes dev -> prod through a GitHub Environment meant to require reviewers. The Environments and reviewers are not created yet, and the pipeline is gated off. | Implemented (CI); deploy written, not deployed | [`workflows`](../.github/workflows/README.md), [deployment.md](deployment.md), [ADR 0005](adr/0005-deploy-gated-off.md) |
+| **Observability** | OpenTelemetry spans for graph, agent, tool and A2A hops with `traceparent` and tenant on every call. Traces go to Azure Monitor when `APPLICATIONINSIGHTS_CONNECTION_STRING` is set; the IaC creates Log Analytics and App Insights. Alerts and dashboards are not defined yet. | Implemented (spans); export written, not deployed | [`harness`](../src/agentplatform/harness/README.md), [`monitoring module`](../infra/terraform/modules/monitoring/README.md) |
+| **Disaster recovery** | Workflow checkpoints (File locally, Cosmos in Azure) let a restarted replica resume a loan; Key Vault has soft delete and purge protection in prod; images are promoted, not rebuilt. No second region, backup policy or restore drill yet. | Resume implemented; DR planned | [`mortgage workflow`](../src/agentplatform/mortgage/README.md), [`cosmos module`](../infra/terraform/modules/cosmos/README.md) |
+
+## Agentic AI
+
+| Practice | What this repo does | Status | Where |
+|---|---|---|---|
+| **Human in the loop** | The mortgage graph parks on MAF `request_info` before the decision letter and resumes from a durable checkpoint; the SLA timer returns the file to processing, never auto-approves. The IT agent's password reset uses `approval_mode="always_require"`; A2A write skills require `approved_by`. | Implemented | [`mortgage`](../src/agentplatform/mortgage/README.md), [`single agents`](../src/agentplatform/single/README.md) |
+| **Evals and release gates** | Golden sets with custom evaluators (policy compliance, condition recall and leak, citation exact match) fail CI below threshold. The `azure-ai-evaluation` Groundedness and Relevance path is written but has not run against Foundry. | Implemented; Foundry evals written, not deployed | [`evals`](../src/agentplatform/evals/README.md), [`scripts/run_evals.py`](../scripts/run_evals.py), [ADR 0004](adr/0004-eval-gates-block-release.md) |
+| **Guardrails and runtime safety** | Inbound text and retrieved passages are screened (Content Safety and Prompt Shields in Azure mode, an offline screen otherwise); the context builder drops injected passages; budgets cap steps, tokens and identical calls; kill switches at APIM and per agent. | Implemented (offline); Azure services written, not deployed | [`safety`](../src/agentplatform/safety/README.md), [`context`](../src/agentplatform/context/README.md), [`harness`](../src/agentplatform/harness/README.md) |
+| **Tool governance and MCP** | MCP servers (credit bureau, LOS) sit behind a gateway with budgets, idempotency keys, schema validation and transient-error mapping. The A2A directory decides who may call whom, and the callee re-checks it. | Implemented | [`mcp_servers`](../src/agentplatform/mcp_servers/README.md), [`a2a`](../src/agentplatform/a2a/README.md), [`agent cards`](../control-plane/agent-cards/README.md) |
+| **Memory** | Short-term workflow state is checkpointed (File or Cosmos) so HITL pauses and crashes do not lose work. There is no long-term user memory in this repo. | Checkpoints implemented; long-term memory not in scope | [`mortgage`](../src/agentplatform/mortgage/README.md) |
+| **Grounding** | Temporal and ACL filters are applied as AI Search OData filters below the model and re-checked in the context builder; a critic rejects any condition that does not cite a guideline; numbers come from calculators, not the model. | Implemented | [`knowledge`](../src/agentplatform/knowledge/README.md), [`context`](../src/agentplatform/context/README.md), [`mortgage`](../src/agentplatform/mortgage/README.md) |
+| **Tracing** | One trace spans BFF -> graph -> A2A -> MCP through `traceparent` propagation; spans carry identity and tenant. | Implemented | [`harness`](../src/agentplatform/harness/README.md) |
+| **Model and prompt versioning** | Model names and versions are pinned as IaC variables; prompts live in a versioned pack with schemas; agent cards carry a stage and need an eval score of at least 0.85 to be promoted. | Implemented; model pins written, not deployed | [`prompts`](../src/agentplatform/prompts/README.md), [`infra/terraform/variables.tf`](../infra/terraform/variables.tf), [`a2a registry`](../src/agentplatform/a2a/README.md) |
+| **Responsible AI** | An underwriter approves every decision; vendor agents are labelled stand-ins; all loans are synthetic; failure exits are documented per node. A fair-lending (disparate impact) evaluation is not implemented and would be required before any real use. | Implemented; fairness evals planned | [`docs/failure-table.md`](../docs/failure-table.md), [`limitations`](../README.md#honest-limitations) |
+
+## Known gaps, in priority order
+
+- Run `azd provision` or a Terraform plan against a real subscription and fix whatever the offline checks cannot see.
+- Fair-lending evaluation for the underwriting flow (disparate impact across protected classes) before any real data.
+- Budgets and cost alerts per environment; alert rules on the App Insights data.
+- Secret scanning in CI (for example gitleaks) in addition to GitHub push protection.
+- A DR plan: second region for Cosmos and AI Search, backup policy, a restore drill.
+
+Related: [architecture decisions](adr/README.md) · [deployment pipeline](deployment.md) · [security policy](../SECURITY.md) · [contributing](../CONTRIBUTING.md)

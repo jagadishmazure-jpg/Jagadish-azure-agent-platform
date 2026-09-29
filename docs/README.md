@@ -8,6 +8,8 @@ versions and API shapes were verified.
 
 | File | What it does |
 |---|---|
+| [`adr/`](adr/README.md) | Architecture decision records: one file per decision, with context, decision and consequences. |
+| [`best-practices.md`](best-practices.md) | Enterprise cloud and agentic AI checklist for this repo, each item marked implemented, written-not-deployed or planned, with links to the code. |
 | [`architecture.md`](architecture.md) | Four planes (experience, agent, knowledge, data): what changes on each, where it lives in the repo and which Azure service hosts it. |
 | [`cost-estimate.md`](cost-estimate.md) | Resources, SKUs and billing dimensions for the `cost-min` and `standard` profiles. Deliberately contains no dollar amounts; links to official pricing pages and the calculator. |
 | [`deploy.md`](deploy.md) | The laptop `azd up` path: prerequisites, profiles, kill switches, private networking, teardown. States up front that nothing has been deployed. |
