@@ -8,6 +8,9 @@ versions and API shapes were verified.
 
 | File | What it does |
 |---|---|
+| [`components/`](components/README.md) | One page per component with the 17 standard sections; output and code blocks are generated and checked by `scripts/doc_drift.py`. |
+| [`implementation-guide.md`](implementation-guide.md) | Build order, layer by layer, with the proof command for each step. |
+| [`adopt-this.md`](adopt-this.md) | What another team can take, how to configure it and how to extend it. |
 | [`adr/`](adr/README.md) | Architecture decision records: one file per decision, with context, decision and consequences. |
 | [`best-practices.md`](best-practices.md) | Enterprise cloud and agentic AI checklist for this repo, each item marked implemented, written-not-deployed or planned, with links to the code. |
 | [`architecture.md`](architecture.md) | Four planes (experience, agent, knowledge, data): what changes on each, where it lives in the repo and which Azure service hosts it. |
@@ -19,10 +22,12 @@ versions and API shapes were verified.
 | [`orchestration-patterns.md`](orchestration-patterns.md) | MAF's five prebuilt orchestrations (sequential, concurrent, handoff, group chat, Magentic) on one loan conditions review: the builders and options used, a **generated** comparison and fault-drill table (`scripts/orchestrations_demo.py --compare --write`), and when to choose which. |
 | [`sdk-notes.md`](sdk-notes.md) | What was checked against the real packages (Agent Framework, azure-ai-projects, a2a-sdk, mcp, Search, Document Intelligence, Content Safety, evaluation) and where the code differs from earlier assumptions. |
 
-## Regenerate the failure table
+## Regenerate generated content
 
 ```bash
 python scripts/render_docs.py      # rewrites docs/failure-table.md from FAILURE_TABLE
+python scripts/doc_drift.py        # refreshes every output and code block in the Markdown files
+python scripts/doc_drift.py --check   # what CI runs: fails if any pasted block is stale
 ```
 
 > **Status:** nothing in this repo has been deployed to Azure yet. The Azure code paths follow verified SDK signatures but have only run offline; see the root README's *Honest limitations*.

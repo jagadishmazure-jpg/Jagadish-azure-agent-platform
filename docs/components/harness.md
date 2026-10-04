@@ -18,7 +18,7 @@ flowchart LR
     BU --> RE[retry_async + CircuitBreaker]
     RE --> X[run_with_exits]
     X --> E{Exit}
-    E --> OK[ok] & RT[retry] & DG[degrade] & ES[escalate] & ST[stop]
+    E --> OK[success] & RT[retry] & CP[compensate] & DG[degrade] & ES[escalate]
     N --> OB[outbox for writes]
     N --> SP[span]
 ```
