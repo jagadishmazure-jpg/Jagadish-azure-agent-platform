@@ -290,6 +290,8 @@ Every folder has its own README with a file-by-file table:
 | [`docs/architecture.md`](docs/architecture.md) · [`docs/engineering-layers.md`](docs/engineering-layers.md) · [`docs/failure-table.md`](docs/failure-table.md) | Planes and sequence, the eight engineering layers, the five-exit failure table |
 | [`SECURITY.md`](SECURITY.md) · [`CONTRIBUTING.md`](CONTRIBUTING.md) · [`CHANGELOG.md`](CHANGELOG.md) | How to report a vulnerability, how to contribute, what changed |
 
+**Related: data platform.** [Jagadish-fabric-enterprise-bi](https://github.com/jagadishmazure-jpg/Jagadish-fabric-enterprise-bi) is the governed Microsoft Fabric data layer for these agents. Its data agent publishes an A2A card with the same control-plane extension (so this platform's directory can register it) and an MCP server, and its vector store can ground this repo's RAG layer with data definitions and data product contracts.
+
 ## License
 
 MIT © Jagadish Meduri
