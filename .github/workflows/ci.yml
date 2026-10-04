@@ -18,6 +18,10 @@ jobs:
         run: pytest -q
       - name: Agent cards are current
         run: python scripts/export_agent_cards.py --check
+      - name: Generated failure table is current
+        run: python scripts/render_docs.py --check
+      - name: Doc drift (pasted output and code excerpts match the code)
+        run: python scripts/doc_drift.py --check
       - name: Eval release gate (golden sets)
         run: python scripts/run_evals.py --out evals-out
       - uses: actions/upload-artifact@v4
