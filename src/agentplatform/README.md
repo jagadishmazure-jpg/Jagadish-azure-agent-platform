@@ -42,5 +42,5 @@ harness/ wraps every node: identity + traceparent, budgets, kill switch, retry/b
 ```bash
 uvicorn agentplatform.bff:app --port 8080       # in-process BFF (offline mocks)
 curl -X POST localhost:8080/loans/L-1001/underwrite
-pytest -q                                       # 106 offline tests
+pytest -q                                       # 113 offline tests
 ```
