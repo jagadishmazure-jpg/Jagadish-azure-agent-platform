@@ -1,7 +1,6 @@
 # ADR 0006: Use a MAF graph for mortgage, single agents elsewhere
 
 - **Status:** Accepted
-- **Date:** 2026-09-29
 
 ## Context
 

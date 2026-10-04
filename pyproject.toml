@@ -6,7 +6,7 @@ readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "Jagadish Meduri" }]
 requires-python = ">=3.11"
-# Versions below were resolved and installed on 2026-09-25 (see docs/sdk-notes.md).
+# Versions below were resolved and installed together (see docs/sdk-notes.md).
 dependencies = [
   "agent-framework-core==1.19.0",
   "agent-framework-foundry==1.13.1",
@@ -49,6 +49,8 @@ filterwarnings = ["ignore::DeprecationWarning"]
 line-length = 110
 target-version = "py311"
 src = ["src", "tests", "scripts"]
+# Markdown holds generated code excerpts (scripts/doc_drift.py); keep them byte-for-byte.
+extend-exclude = ["*.md"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]

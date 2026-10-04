@@ -1,4 +1,4 @@
-# SDK notes — what was verified (2026-09-25)
+# SDK notes: what was verified
 
 Everything below was checked by installing the packages into a clean Python 3.12 venv
 (`uv pip install ...`) and introspecting / running the APIs, plus PyPI metadata and
@@ -11,7 +11,7 @@ follows reality and the difference is called out.
 |---|---|---|
 | `agent-framework-core` | 1.19.0 | Microsoft Agent Framework (MAF) Python core: `Agent`, `WorkflowBuilder`, `Executor`, `@handler`, `@response_handler`, checkpoints. |
 | `agent-framework-foundry` | 1.13.1 | `FoundryChatClient`, `FoundryAgent`, `FoundryEvals`. **Replaces** `agent-framework-azure-ai`, whose last release is `1.0.0rc6` (2026-03). |
-| `agent-framework-orchestrations` | 1.2.0 | Prebuilt `SequentialBuilder`, `ConcurrentBuilder`, `HandoffBuilder`, `GroupChatBuilder`, `MagenticBuilder` (requires `agent-framework-core>=1.19.0,<2`). **Separate package**: `agent_framework.orchestrations` in core is only a lazy re-export shim and fails at import time without it. Verified 2026-09-29. |
+| `agent-framework-orchestrations` | 1.2.0 | Prebuilt `SequentialBuilder`, `ConcurrentBuilder`, `HandoffBuilder`, `GroupChatBuilder`, `MagenticBuilder` (requires `agent-framework-core>=1.19.0,<2`). **Separate package**: `agent_framework.orchestrations` in core is only a lazy re-export shim and fails at import time without it. |
 | `agent-framework-azure-cosmos` | 1.0.0b260918 | `CosmosCheckpointStorage` (partition key `/workflow_name`), `CosmosHistoryProvider`. Beta. |
 | `azure-ai-projects` | 2.6.1 | Foundry project SDK. 2.7.0 exists, but `agent-framework-foundry 1.13.1` pins `<2.7`, so 2.6.1 is the newest that resolves. |
 | `azure-ai-evaluation` | 1.18.7 | `GroundednessEvaluator`, `RelevanceEvaluator`, `evaluate()`. (optional `[eval]` extra) |
@@ -90,10 +90,10 @@ Import from `agent_framework.orchestrations`.
 
 ## Models
 
-* `gpt-4o-mini (2024-07-18)` is on the retirement schedule (Standard retired 2026-03-31; Global Standard dates announced as 2026-10-01 and later revised). `gpt-4.1-mini` retires 2026-10-14 with `gpt-5-mini` as replacement. **Default chat deployment here is `gpt-5-mini` (2025-08-07) GlobalStandard**, parameterized. Embeddings: `text-embedding-3-small` v1.
+* Older mini chat models (`gpt-4o-mini`, `gpt-4.1-mini`) are on Azure's retirement schedule, with `gpt-5-mini` as the replacement. **Default chat deployment here is `gpt-5-mini` (`2025-08-07`) GlobalStandard**, parameterized. Embeddings: `text-embedding-3-small` v1.
 * Check the live retirement page before deploying: https://learn.microsoft.com/azure/ai-foundry/openai/concepts/model-retirements
 
-## Document Intelligence v4.0 (2024-11-30 GA) prebuilt model IDs
+## Document Intelligence v4.0 (API `2024-11-30`, GA) prebuilt model IDs
 
 `prebuilt-payStub.us`, `prebuilt-tax.us.w2`, `prebuilt-bankStatement.us` (all en-US).
 

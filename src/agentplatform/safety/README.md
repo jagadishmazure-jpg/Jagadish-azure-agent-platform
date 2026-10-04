@@ -3,7 +3,7 @@
 Screens what users send and what the system retrieves or extracts, to catch harmful content
 and indirect prompt injection. Offline it uses deterministic pattern checks. On Azure it calls
 `azure-ai-contentsafety` text analysis for harm categories and the Prompt Shields REST API
-(`text:shieldPrompt`, api-version 2024-09-01) for attacks, both with Entra ID, no keys.
+(`text:shieldPrompt`, api-version `2024-09-01`) for attacks, both with Entra ID, no keys.
 
 | File | What it does |
 |---|---|

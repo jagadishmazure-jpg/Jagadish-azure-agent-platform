@@ -1,11 +1,13 @@
 # Changelog
 
-Notable changes, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). There are no versioned releases, so entries are grouped by date.
+Notable changes, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). There are no versioned releases, so entries are grouped by milestone, newest first.
 
 ## Unreleased
 
 ### Added
 
+- Component docs in `docs/components/` (17 standard sections each), `docs/implementation-guide.md`, `docs/adopt-this.md` and the `scripts/doc_drift.py` CI check that keeps pasted output and code excerpts in sync with the code.
+- `CODEOWNERS` and a README in every folder.
 - `docs/best-practices.md`: cloud and agentic AI practices with honest status and links.
 - Architecture decision records in `docs/adr/`.
 - `SECURITY.md`, `CONTRIBUTING.md` and this changelog.
@@ -14,7 +16,7 @@ Notable changes, newest first. The format follows [Keep a Changelog](https://kee
 
 - README sections follow one order: what, why, architecture, run, test, deploy, limits.
 
-## 2026-09-29
+## Milestone 2: delivery pipeline and orchestration patterns
 
 ### Added
 
@@ -28,7 +30,7 @@ Notable changes, newest first. The format follows [Keep a Changelog](https://kee
 
 - The earlier `azd` deploy workflow (gated by `ENABLE_DEPLOY`) was replaced by the new pipeline.
 
-## 2026-09-25
+## Milestone 1: platform and flagship workflow
 
 ### Added
 

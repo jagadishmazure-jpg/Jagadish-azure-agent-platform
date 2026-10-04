@@ -1,6 +1,6 @@
 # `docintel/`: document extraction
 
-Azure AI Document Intelligence (v4.0, API 2024-11-30) prebuilt models for mortgage documents:
+Azure AI Document Intelligence (v4.0, API `2024-11-30`) prebuilt models for mortgage documents:
 `prebuilt-payStub.us`, `prebuilt-tax.us.w2` and `prebuilt-bankStatement.us`. OCR runs before any
 LLM sees a document, so agents reason over field/value pairs with confidence, never raw pixels.
 Runs offline by default (`AAP_MODE=offline`); `AAP_MODE=azure` switches to the Azure adapter. Offline, fields come from the JSON files in [`fixtures/`](fixtures/README.md).
