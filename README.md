@@ -271,7 +271,7 @@ Every folder has its own README with a file-by-file table:
 | [`scripts/`](scripts/README.md) | Demo, evals, card export, Azure dry-run scripts |
 | [`docs/`](docs/README.md) | Architecture and engineering docs, best practices, ADRs ([`docs/adr/`](docs/adr/README.md)) |
 | [`tests/`](tests/README.md) | Offline test suite |
-| [`.github/`](.github/README.md) | Workflows, deploy scripts and `CODEOWNERS` |
+| `.github/` | Workflows, deploy scripts and `CODEOWNERS` (`* @jagadishmazure-jpg`) |
 | [`.github/workflows/`](.github/workflows/README.md) | CI, infrastructure checks, deploy and teardown workflows |
 | [`.github/scripts/`](.github/scripts/README.md) | Shell steps used by the deploy workflows |
 

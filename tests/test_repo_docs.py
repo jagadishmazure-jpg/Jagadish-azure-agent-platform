@@ -27,7 +27,8 @@ SECTIONS = [
 ]
 SKIP_DIRS = {".git", ".venv", "__pycache__", ".pytest_cache", ".ruff_cache", ".checkpoints", ".terraform"}
 # prompts/pack: every .md there is parsed as a prompt, so it cannot hold a README.
-NO_README = {Path("src/agentplatform/prompts/pack")}
+# .github: GitHub would show .github/README.md instead of the root README on the repo page.
+NO_README = {Path("src/agentplatform/prompts/pack"), Path(".github")}
 
 
 def _component_docs():
@@ -66,6 +67,7 @@ def test_every_folder_has_a_readme():
         if not (d / "README.md").exists():
             missing.append(str(rel))
     assert not missing, missing
+    assert not (ROOT / ".github/README.md").exists()
 
 
 def test_codeowners():
