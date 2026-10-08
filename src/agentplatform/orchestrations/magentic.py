@@ -57,20 +57,19 @@ class ManagerScript:
         self.ledgers += 1
         said = [(m.author_name, m.text or "") for m in msgs if m.role == "assistant"]
         last_author, last_text = said[-1] if said else (None, "")
-        if last_author in LANES and "FLAGS:" not in last_text:
+        stalled = last_author in LANES and "FLAGS:" not in last_text
+        if stalled:
             self.failures[last_author] = self.failures.get(last_author, 0) + 1
         done = {a for a, t in said if a in LANES and "FLAGS:" in t}
         decided = any(a == "underwriter" and "DECISION:" in t for a, t in said)
         todo = [lane for lane in LANES if lane not in done and lane not in self._given_up()]
         nxt = todo[0] if todo else "underwriter"
-        progress = not (last_author in LANES and "FLAGS:" not in last_text)
+        progress_reason = f"{last_author} gave no findings" if stalled else ""
         return json.dumps(
             {
                 "is_request_satisfied": _field(decided, "underwriter issued a decision" if decided else ""),
                 "is_in_loop": _field(False),
-                "is_progress_being_made": _field(
-                    progress, "" if progress else f"{last_author} gave no findings"
-                ),
+                "is_progress_being_made": _field(not stalled, progress_reason),
                 "next_speaker": _field(nxt),
                 "instruction_or_question": _field(
                     f"{nxt}: report your findings for this loan."
