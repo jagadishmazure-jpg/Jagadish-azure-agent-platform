@@ -1,7 +1,7 @@
 # `services/bff/`: container image for the experience-plane BFF / orchestrator
 
 Dockerfile for the experience-plane BFF / orchestrator. Runs the FastAPI BFF (`agentplatform.bff:app`) with the in-process MAF mortgage graph and single agents. azd service `bff`; the only externally reachable app, behind APIM. The image is a two-stage build from the repo root: the first
-stage builds a wheel of `agentplatform`, the second installs it into `python:3.12-slim`, runs as
+stage builds a wheel of `agentplatform`, the second installs it into `python:3.12-slim` (pinned by digest), removes pip, runs as
 a non-root user and listens on port 8080 (`PORT`).
 
 | File | What it does |
