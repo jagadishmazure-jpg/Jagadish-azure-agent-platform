@@ -6,7 +6,7 @@
 - **Survives crashes:** the workflow checkpoints its state, so a restarted process resumes the loan where it left off instead of starting over (covered by tests).
 - **Governed agent-to-agent (A2A) calls:** CRM, ERP and underwriting agents publish agent cards; a directory controls who may call whom, requires an eval score before promotion, and has a kill switch.
 - **All five Microsoft Agent Framework built-in orchestrations** (sequential, concurrent, handoff, group chat, Magentic) run on the same loan review and are compared side by side.
-- **Cost-minimized infrastructure as code:** Bicep templates for `azd up` (cost-min profile by default, not deployed yet); 113 automated tests plus eval release gates run in CI.
+- **Cost-minimized infrastructure as code:** Bicep templates for `azd up` (cost-min profile by default, not deployed yet); 114 automated tests plus eval release gates run in CI.
 - **Terraform + Bicep, GitHub Actions deploy:** the same infrastructure in both tools ([`infra/terraform`](infra/terraform/README.md)), and a GitHub Actions pipeline with OIDC login (no secrets), a Bicep/Terraform choice, and dev -> prod approval gates. The pipeline is gated off until a subscription exists ([docs/deployment.md](docs/deployment.md)).
 
 **Skills demonstrated:** Azure AI Foundry, Microsoft Agent Framework, Azure OpenAI, Azure AI Search, Document Intelligence, Content Safety, MCP, A2A, Bicep/azd, Container Apps, APIM, Cosmos DB, Service Bus, Python.
@@ -154,7 +154,7 @@ The platform pieces carry over across industries. Only the prompts, tools, corpo
 ```bash
 python -m venv .venv && . .venv/bin/activate && pip install -e ".[dev]"
 make lint            # ruff check + ruff format --check
-make test            # pytest (113 tests, offline)
+make test            # pytest (114 tests, offline)
 make demo            # underwrite L-1001 / L-1002 / L-1003, approve, print letters
 make orchestrations  # the five MAF orchestration patterns + comparison table
 make evals           # golden-set eval gate
@@ -182,7 +182,7 @@ The demo produces three outcomes:
 ## Test
 
 ```bash
-make lint && make test                        # ruff + 113 offline tests
+make lint && make test                        # ruff + 114 offline tests
 make evals                                    # golden-set eval gate (fails on regression)
 python scripts/export_agent_cards.py --check  # agent cards match the code
 make bicep                                    # bicep build, no warnings
@@ -232,7 +232,7 @@ infra/               main.bicep, main.parameters.json, modules/*.bicep, terrafor
 services/            bff/, a2a/, mcp/ Dockerfiles
 scripts/             foundry_register · seed_search_index · run_evals · export_agent_cards · render_docs · demo · orchestrations_demo · run_local_mesh · postprovision
 docs/                components/ · implementation-guide · adopt-this · architecture · orchestration-patterns · engineering-layers · failure-table · cost-estimate · deploy · deployment · sdk-notes · best-practices · adr/
-tests/               113 offline tests (pytest)
+tests/               114 offline tests (pytest)
 ```
 
 ### Repository map
