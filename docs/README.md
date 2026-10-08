@@ -8,6 +8,7 @@ versions and API shapes were verified.
 
 | File | What it does |
 |---|---|
+| [`security/`](security/README.md) | Threat model: STRIDE, OWASP Top 10 for LLM Applications and MITRE ATLAS mapped to this repo's components, with controls, tests and built / planned status. |
 | [`components/`](components/README.md) | One page per component with the 17 standard sections; output and code blocks are generated and checked by `scripts/doc_drift.py`. |
 | [`implementation-guide.md`](implementation-guide.md) | Build order, layer by layer, with the proof command for each step. |
 | [`adopt-this.md`](adopt-this.md) | What another team can take, how to configure it and how to extend it. |
