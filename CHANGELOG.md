@@ -6,6 +6,7 @@ Notable changes, newest first. The format follows [Keep a Changelog](https://kee
 
 ### Added
 
+- Azure Monitor alerting in Bicep and Terraform (`alerts.bicep` / `modules/alerts`, on by default): an action group with an optional on-call email, 4 metric alert rules and 3 KQL alert rules on Application Insights, plus diagnostic settings (`diagnostics.bicep`) that send `allLogs` and `AllMetrics` from the 8 data and AI resources to Log Analytics. Opt-in Defender for Cloud plans (`defender.bicep` / `modules/defender`, `enable_defender = false` by default). Bicep's private networking now has the NSG on both subnets that Terraform already had. Two parity tests and a `defender_opt_in` plan test; not deployed.
 - Threat model (`docs/security/threat-model.md`): STRIDE, OWASP Top 10 for LLM Applications and MITRE ATLAS mapped to this repository's components, each row with its control, test evidence and built / planned status.
 - SBOM job in CI: an SPDX JSON software bill of materials of the source tree on every run (artifact `sbom.spdx.json`).
 - Container supply chain: base images pinned by digest, pip/uv removed from runtime images, a Trivy image scan that fails on fixable HIGH/CRITICAL findings, an image SBOM, and keyless build provenance for the image archive on `main` (`actions/attest-build-provenance`; verification steps in `SECURITY.md`).

@@ -44,6 +44,36 @@ run "dev_cost_min" {
     condition     = length(module.app) == 6
     error_message = "six core container apps expected"
   }
+
+  assert {
+    condition     = length(module.alerts) == 1 && length(module.alerts[0].metric_alert_names) == 4 && length(module.alerts[0].log_alert_names) == 3
+    error_message = "alerts are on by default: 4 metric and 3 log alert rules"
+  }
+
+  assert {
+    condition     = length(module.alerts[0].diagnostic_setting_targets) == 8
+    error_message = "every data and AI resource sends logs and metrics to Log Analytics"
+  }
+
+  assert {
+    condition     = length(module.defender) == 0
+    error_message = "Defender for Cloud is subscription-wide and must stay opt-in"
+  }
+}
+
+run "defender_opt_in" {
+  command = plan
+
+  variables {
+    environment     = "dev"
+    enable_defender = true
+    alert_email     = "oncall@example.com"
+  }
+
+  assert {
+    condition     = length(module.defender) == 1 && join(",", module.defender[0].plans) == "AI,Arm,CosmosDbs,KeyVaults"
+    error_message = "enable_defender turns on the AI, Arm, CosmosDbs and KeyVaults plans"
+  }
 }
 
 run "prod_private" {
@@ -60,6 +90,11 @@ run "prod_private" {
   assert {
     condition     = length(module.private_endpoint) == 7 && local.service_bus_sku == "Premium"
     error_message = "private link must add 7 private endpoints and force Service Bus Premium"
+  }
+
+  assert {
+    condition     = startswith(module.network[0].nsg_name, "nsg-")
+    error_message = "private networking puts an NSG on both subnets"
   }
 
   assert {

@@ -60,5 +60,6 @@ resource dataRole 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2024
 }]
 
 output id string = account.id
+output name string = account.name
 output endpoint string = account.properties.documentEndpoint
 output databaseName string = databaseName

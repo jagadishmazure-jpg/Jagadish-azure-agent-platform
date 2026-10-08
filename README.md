@@ -6,7 +6,7 @@
 - **Survives crashes:** the workflow checkpoints its state, so a restarted process resumes the loan where it left off instead of starting over (covered by tests).
 - **Governed agent-to-agent (A2A) calls:** CRM, ERP and underwriting agents publish agent cards; a directory controls who may call whom, requires an eval score before promotion, and has a kill switch.
 - **All five Microsoft Agent Framework built-in orchestrations** (sequential, concurrent, handoff, group chat, Magentic) run on the same loan review and are compared side by side.
-- **Cost-minimized infrastructure as code:** Bicep templates for `azd up` (cost-min profile by default, not deployed yet); 114 automated tests plus eval release gates run in CI.
+- **Cost-minimized infrastructure as code:** Bicep templates for `azd up` (cost-min profile by default, not deployed yet); 116 automated tests plus eval release gates run in CI.
 - **Terraform + Bicep, GitHub Actions deploy:** the same infrastructure in both tools ([`infra/terraform`](infra/terraform/README.md)), and a GitHub Actions pipeline with OIDC login (no secrets), a Bicep/Terraform choice, and dev -> prod approval gates. The pipeline is gated off until a subscription exists ([docs/deployment.md](docs/deployment.md)).
 
 **Skills demonstrated:** Azure AI Foundry, Microsoft Agent Framework, Azure OpenAI, Azure AI Search, Document Intelligence, Content Safety, MCP, A2A, Bicep/azd, Container Apps, APIM, Cosmos DB, Service Bus, Python.
@@ -133,7 +133,7 @@ sequenceDiagram
 | **Evals** (`src/agentplatform/evals`, `scripts/run_evals.py`) | Golden sets and custom evaluators (policy compliance, condition recall/leak, citation exact-match) feed a release gate that fails CI. With `--azure`, `azure-ai-evaluation` Groundedness and Relevance run alongside the custom evaluators via `evaluate()`, logged to the Foundry project. |
 | **Safety** | Content Safety runs on inbound text and on retrieved passages. Prompt Shields (REST) catches injection. The context builder also drops injected passages offline. |
 | **Harness** | Identity envelope, budgets (steps, tokens, identical-call caps), kill switch, retry with circuit breaker, outbox, and OpenTelemetry. Traces go to Azure Monitor when `APPLICATIONINSIGHTS_CONNECTION_STRING` is set, and to the console otherwise. |
-| **Infra** (`infra/`, `azure.yaml`) | Bicep for `azd up`: Foundry account and project with model deployments, AI Search, Document Intelligence, Content Safety, Container Apps (6 apps), APIM, Cosmos serverless, Service Bus, Key Vault, ACR, Log Analytics and App Insights. Two least-privilege managed identities. Optional Private Link. `cost-min` is the default profile. |
+| **Infra** (`infra/`, `azure.yaml`) | Bicep for `azd up`: Foundry account and project with model deployments, AI Search, Document Intelligence, Content Safety, Container Apps (6 apps), APIM, Cosmos serverless, Service Bus, Key Vault, ACR, Log Analytics and App Insights. Two least-privilege managed identities. Optional Private Link with an NSG on both subnets. Azure Monitor alert rules and diagnostic settings (on by default) and opt-in Defender for Cloud plans, in Bicep and Terraform alike. `cost-min` is the default profile. All written and validated offline; not deployed. |
 | **Engineering layers** | Eight layers stacked from the bottom up: prompts and context at the base, then workflows, agents and graphs, then loops, the runtime harness, and finally the platform. See [docs/engineering-layers.md](docs/engineering-layers.md). |
 
 ## Industry mapping
@@ -154,7 +154,7 @@ The platform pieces carry over across industries. Only the prompts, tools, corpo
 ```bash
 python -m venv .venv && . .venv/bin/activate && pip install -e ".[dev]"
 make lint            # ruff check + ruff format --check
-make test            # pytest (114 tests, offline)
+make test            # pytest (116 tests, offline)
 make demo            # underwrite L-1001 / L-1002 / L-1003, approve, print letters
 make orchestrations  # the five MAF orchestration patterns + comparison table
 make evals           # golden-set eval gate
@@ -182,7 +182,7 @@ The demo produces three outcomes:
 ## Test
 
 ```bash
-make lint && make test                        # ruff + 114 offline tests
+make lint && make test                        # ruff + 116 offline tests
 make evals                                    # golden-set eval gate (fails on regression)
 python scripts/export_agent_cards.py --check  # agent cards match the code
 make bicep                                    # bicep build, no warnings
@@ -232,7 +232,7 @@ infra/               main.bicep, main.parameters.json, modules/*.bicep, terrafor
 services/            bff/, a2a/, mcp/ Dockerfiles
 scripts/             foundry_register · seed_search_index · run_evals · export_agent_cards · render_docs · demo · orchestrations_demo · run_local_mesh · postprovision
 docs/                components/ · implementation-guide · adopt-this · architecture · orchestration-patterns · engineering-layers · failure-table · cost-estimate · deploy · deployment · sdk-notes · best-practices · adr/
-tests/               114 offline tests (pytest)
+tests/               116 offline tests (pytest)
 ```
 
 ### Repository map

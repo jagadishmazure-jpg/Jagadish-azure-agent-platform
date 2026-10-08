@@ -62,7 +62,7 @@ overlays versus general users; the human approval before any write.
 | LLM07 System prompt leakage | Prompts reveal underwriting logic | Prompts hold no secrets; rules and numbers come from tools (`test_roster_numbers_only_come_from_tools`) | Built (by design) |
 | LLM08 Vector and embedding weaknesses | Overlay chunks retrieved for users without clearance | Security filter on every query; index definition matches the query contract (`test_search_index_definition_matches_query_contract`) | Built (offline); AI Search written, not deployed |
 | LLM09 Misinformation | Wrong guideline version applied | Temporal RAG; critic; golden-set gate (`test_golden_sets_pass_release_gate`) | Built |
-| LLM10 Unbounded consumption | Orchestration loops or repeated calls | Round caps, identical-call budget, MCP gateway budget (`test_gateway_budget_and_errors`) | Built (counts); Azure budget alerts planned |
+| LLM10 Unbounded consumption | Orchestration loops or repeated calls | Round caps, identical-call budget, MCP gateway budget (`test_gateway_budget_and_errors`) | Built (counts); App Insights failure and dependency alerts written, not deployed; budget alerts planned |
 
 ## MITRE ATLAS
 

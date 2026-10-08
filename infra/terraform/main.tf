@@ -287,3 +287,45 @@ module "apim" {
     chat-it    = { method = "POST", url = "/chat/it", params = [] }
   }
 }
+
+# ---- alerting, diagnostics and Defender for Cloud (written and tested offline; not deployed) ----
+module "alerts" {
+  source                  = "./modules/alerts"
+  count                   = var.enable_alerts ? 1 : 0
+  resource_group_name     = azurerm_resource_group.this.name
+  location                = var.location
+  tags                    = local.tags
+  name_suffix             = module.naming.base
+  action_group_name       = "ag-${module.naming.base}"
+  action_group_short_name = "agentplat"
+  alert_email             = var.alert_email
+  log_analytics_id        = module.monitoring.log_analytics_id
+  app_insights_id         = module.monitoring.app_insights_id
+  metric_alerts = {
+    sb-dead-letters  = { scope = module.servicebus.id, namespace = "Microsoft.ServiceBus/namespaces", metric = "DeadletteredMessages", aggregation = "Maximum", operator = "GreaterThan", threshold = 0, severity = 2, description = "Queued LOS writes or outbox messages are dead-lettering" }
+    kv-availability  = { scope = module.keyvault.id, namespace = "Microsoft.KeyVault/vaults", metric = "Availability", aggregation = "Average", operator = "LessThan", threshold = 99, severity = 1, description = "Key Vault availability below 99%" }
+    foundry-5xx      = { scope = module.foundry.account_id, namespace = "Microsoft.CognitiveServices/accounts", metric = "ServerErrors", aggregation = "Total", operator = "GreaterThan", threshold = 5, severity = 2, description = "Foundry model endpoint returning server errors" }
+    content-safety-5 = { scope = module.content_safety.id, namespace = "Microsoft.CognitiveServices/accounts", metric = "ServerErrors", aggregation = "Total", operator = "GreaterThan", threshold = 5, severity = 2, description = "Content Safety failing; Prompt Shields fail closed, so requests are being blocked" }
+  }
+  log_alerts = {
+    failed-requests = { query = "requests | where success == false", threshold = 5, severity = 2, description = "More than 5 failed requests in 15 minutes" }
+    exceptions      = { query = "exceptions", threshold = 10, severity = 3, description = "Exception spike in the services" }
+    dependency-fail = { query = "dependencies | where success == false", threshold = 10, severity = 3, description = "Failing calls to models, MCP servers or A2A agents" }
+  }
+  diagnostic_targets = {
+    foundry        = module.foundry.account_id
+    search         = module.search.id
+    docintel       = module.docintel.id
+    content-safety = module.content_safety.id
+    cosmos         = module.cosmos.id
+    servicebus     = module.servicebus.id
+    keyvault       = module.keyvault.id
+    registry       = module.registry.id
+  }
+}
+
+module "defender" {
+  source = "./modules/defender"
+  count  = var.enable_defender ? 1 : 0
+  plans  = var.defender_plans
+}

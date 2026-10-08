@@ -46,3 +46,30 @@ def test_bicep_builds_cleanly():
     assert "Warning" not in out.stderr and "Error" not in out.stderr, out.stderr
     arm = json.loads(out.stdout)
     assert arm["$schema"].endswith("subscriptionDeploymentTemplate.json#")
+
+
+def test_bicep_matches_terraform_for_nsgs():
+    net_b = (ROOT / "infra/modules/network.bicep").read_text()
+    net_t = (ROOT / "infra/terraform/modules/network/main.tf").read_text()
+    assert net_t.count("azurerm_subnet_network_security_group_association") == 2
+    assert "Microsoft.Network/networkSecurityGroups" in net_b
+    assert net_b.count("networkSecurityGroup: { id: nsg.id }") == 2
+
+
+def test_alerts_diagnostics_and_defender_match_in_both_tools():
+    main_b = (ROOT / "infra/main.bicep").read_text()
+    main_t = (ROOT / "infra/terraform/main.tf").read_text()
+    alerts_t = main_t.split('module "alerts"')[1].split('module "defender"')[0]
+    names_b = set(re.findall(r"\{ name: '([a-z0-9-]+)', (?:scope|query):", main_b))
+    names_t = set(re.findall(r"^\s+([a-z0-9-]+)\s+= \{ (?:scope|query) =", alerts_t, re.M))
+    assert names_b == names_t and len(names_b) == 7, (names_b, names_t)
+    diag_b = (ROOT / "infra/modules/diagnostics.bicep").read_text()
+    diag_t = set(re.findall(r"^\s+([a-z-]+)\s+= module\.", alerts_t.split("diagnostic_targets")[1], re.M))
+    assert diag_t == set(re.findall(r"'([a-z-]+)'", diag_b.split("output targets array =")[1]))
+    assert diag_b.count("categoryGroup: 'allLogs'") == 1 and diag_b.count("scope:") == len(diag_t) == 8
+    # alerts on by default; Defender for Cloud is subscription-wide and billed, so opt-in in both tools
+    assert "param enableAlerts bool = true" in main_b and "param enableDefender bool = false" in main_b
+    variables = (ROOT / "infra/terraform/variables.tf").read_text()
+    assert re.search(r'variable "enable_defender" \{[^}]*default\s+= false', variables)
+    assert re.search(r'variable "enable_alerts" \{[^}]*default\s+= true', variables)
+    assert "pricingTier: 'Standard'" in (ROOT / "infra/modules/defender.bicep").read_text()

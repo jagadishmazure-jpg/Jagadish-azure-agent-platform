@@ -57,7 +57,16 @@ Run `azd env set AAP_PRIVATE_LINK true`. This adds:
 * public network access disabled on those services
 * Service Bus forced to Premium
 
+* one NSG on both subnets (default rules; the same in Bicep and Terraform)
+
 The postprovision hook then needs a runner that has network line-of-sight, such as a self-hosted runner in the VNet.
+
+## Alerts, diagnostics and Defender for Cloud
+
+Written and validated offline; never deployed.
+
+* **On by default** (`AAP_ENABLE_ALERTS`, Bicep `enableAlerts`, Terraform `enable_alerts`): an action group, 4 metric alert rules (Service Bus dead letters, Key Vault availability, Foundry and Content Safety server errors), 3 KQL alert rules on Application Insights (failed requests, exceptions, failing dependencies) and diagnostic settings that send `allLogs` and `AllMetrics` from the 8 data and AI resources to Log Analytics. Set `azd env set AAP_ALERT_EMAIL oncall@example.com` to get email; without it the alerts only show in Azure Monitor. Diagnostic logs count against the Log Analytics daily cap in the `cost-min` profile.
+* **Off by default** (`AAP_ENABLE_DEFENDER`, `enableDefender`, `enable_defender`): Defender for Cloud plans `AI`, `Arm`, `CosmosDbs` and `KeyVaults` at `Standard` tier. These apply to every resource of that type in the subscription and are billed per resource, so turn them on only in a subscription you own, and check the [Defender for Cloud pricing](https://azure.microsoft.com/pricing/details/defender-for-cloud/) first.
 
 ## Teardown
 

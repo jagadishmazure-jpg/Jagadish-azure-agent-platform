@@ -24,6 +24,14 @@ param costProfile string = 'cost-min'
 @description('Private endpoints + VNet-integrated Container Apps. Off by default (adds hourly PE + DNS cost; forces Service Bus Premium).')
 param privateLink bool = false
 
+@description('Action group, metric + log alert rules and diagnostic settings to Log Analytics. Cheap; on by default.')
+param enableAlerts bool = true
+@description('Optional on-call email for the action group. Empty = alerts fire in Azure Monitor only.')
+param alertEmail string = ''
+@description('Microsoft Defender for Cloud plans. SUBSCRIPTION-WIDE and billed per resource, so off by default.')
+param enableDefender bool = false
+param defenderPlans array = ['AI', 'Arm', 'CosmosDbs', 'KeyVaults']
+
 @description('Deploy the Dynamics 365-style / Salesforce-style / SAP-style stand-in A2A agents.')
 param deployVendorStandins bool = false
 
@@ -312,6 +320,52 @@ module apim 'modules/apim.bicep' = {
     entraTenantId: entraTenantId
     entraAudience: entraAudience
   }
+}
+
+// ---- alerting, diagnostics and Defender for Cloud (built offline; not deployed) ----
+module alerts 'modules/alerts.bicep' = if (enableAlerts) {
+  scope: rg
+  name: 'alerts'
+  params: {
+    location: location
+    tags: tags
+    resourceToken: resourceToken
+    actionGroupShortName: 'agentplat'
+    alertEmail: alertEmail
+    appInsightsId: monitoring.outputs.appInsightsId
+    metricAlerts: [
+      { name: 'sb-dead-letters', scope: serviceBus.outputs.id, namespace: 'Microsoft.ServiceBus/namespaces', metric: 'DeadletteredMessages', aggregation: 'Maximum', operator: 'GreaterThan', threshold: 0, severity: 2, description: 'Queued LOS writes or outbox messages are dead-lettering' }
+      { name: 'kv-availability', scope: keyVault.outputs.id, namespace: 'Microsoft.KeyVault/vaults', metric: 'Availability', aggregation: 'Average', operator: 'LessThan', threshold: 99, severity: 1, description: 'Key Vault availability below 99%' }
+      { name: 'foundry-5xx', scope: foundry.outputs.accountId, namespace: 'Microsoft.CognitiveServices/accounts', metric: 'ServerErrors', aggregation: 'Total', operator: 'GreaterThan', threshold: 5, severity: 2, description: 'Foundry model endpoint returning server errors' }
+      { name: 'content-safety-5', scope: contentSafety.outputs.id, namespace: 'Microsoft.CognitiveServices/accounts', metric: 'ServerErrors', aggregation: 'Total', operator: 'GreaterThan', threshold: 5, severity: 2, description: 'Content Safety failing; Prompt Shields fail closed, so requests are being blocked' }
+    ]
+    logAlerts: [
+      { name: 'failed-requests', query: 'requests | where success == false', threshold: 5, severity: 2, description: 'More than 5 failed requests in 15 minutes' }
+      { name: 'exceptions', query: 'exceptions', threshold: 10, severity: 3, description: 'Exception spike in the services' }
+      { name: 'dependency-fail', query: 'dependencies | where success == false', threshold: 10, severity: 3, description: 'Failing calls to models, MCP servers or A2A agents' }
+    ]
+  }
+}
+
+module diagnostics 'modules/diagnostics.bicep' = if (enableAlerts) {
+  scope: rg
+  name: 'diagnostics'
+  params: {
+    logAnalyticsId: monitoring.outputs.logAnalyticsId
+    foundryAccountName: foundry.outputs.accountName
+    searchName: search.outputs.name
+    docIntelName: docintel.outputs.name
+    contentSafetyName: contentSafety.outputs.name
+    cosmosName: cosmos.outputs.name
+    serviceBusName: serviceBus.outputs.name
+    keyVaultName: keyVault.outputs.name
+    registryName: registry.outputs.name
+  }
+}
+
+module defender 'modules/defender.bicep' = if (enableDefender) {
+  name: 'defender'
+  params: { plans: defenderPlans }
 }
 
 // ---- outputs → azd env (consumed by hooks, scripts, and local AAP_MODE=azure runs) ----

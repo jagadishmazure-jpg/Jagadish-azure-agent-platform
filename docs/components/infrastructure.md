@@ -1,6 +1,6 @@
 # Infrastructure (`infra/`, `azure.yaml`, workflows)
 
-Bicep for `azd up` and an equivalent Terraform stack, a cost-minimal default profile and optional Private Link. Defined and validated in CI; not deployed.
+Bicep for `azd up` and an equivalent Terraform stack, a cost-minimal default profile, optional Private Link (with an NSG on both subnets in both tools), Azure Monitor alert rules and diagnostic settings, and opt-in Defender for Cloud plans. Defined and validated in CI; not deployed.
 
 **Sections:** [1. Purpose](#1-purpose) · [2. Architecture](#2-architecture) · [3. How it works](#3-how-it-works) · [4. Key files](#4-key-files) · [5. Code excerpts](#5-code-excerpts) · [6. Configuration](#6-configuration) · [7. Commands](#7-commands) · [8. Real output](#8-real-output) · [9. Tests and eval gates](#9-tests-and-eval-gates) · [10. Guardrails](#10-guardrails) · [11. Security and governance](#11-security-and-governance) · [12. Observability](#12-observability) · [13. Failure modes](#13-failure-modes) · [14. Mapping to Azure services](#14-mapping-to-azure-services) · [15. Limitations](#15-limitations) · [16. Interview talking points](#16-interview-talking-points) · [17. Adopt this](#17-adopt-this)
 
@@ -17,7 +17,9 @@ flowchart TB
     RG --> FO[foundry] & COG[cognitive: Content Safety, DocIntel] & SR[search]
     RG --> CO[cosmos] & SB[servicebus] & CAE[containerapps-env] --> CA[containerapp x N]
     RG --> APIM[apim]
-    RG -. privateLink .-> PE[private-endpoint + network]
+    RG -. privateLink .-> PE[private-endpoint + network + NSG]
+    RG -. enableAlerts .-> AL[alerts: action group, metric + log rules] & DG[diagnostics: allLogs + AllMetrics to Log Analytics]
+    M -. enableDefender .-> DF[defender: Defender for Cloud plans, subscription scope]
 ```
 
 ## 3. How it works
@@ -26,7 +28,8 @@ flowchart TB
 2. `main.bicep` creates the resource group and composes one module per resource type, with the `cost-min` profile by default.
 3. `roles.bicep` grants the workload identity data-plane roles; local auth is disabled on data services.
 4. `infra/terraform` mirrors the same design with plan tests that use mocked providers.
-5. CI builds the Bicep; the `infra` workflow runs `terraform fmt`, `validate`, `test`, tflint and checkov. Deploy and teardown workflows exist but need Azure credentials and are not run.
+5. `alerts.bicep` (Terraform `modules/alerts`) creates an action group, 4 metric alert rules (Service Bus dead letters, Key Vault availability, Foundry and Content Safety server errors) and 3 KQL rules on Application Insights (failed requests, exceptions, failing dependencies); `diagnostics.bicep` sends `allLogs` and `AllMetrics` from the 8 data and AI resources to Log Analytics. Both are on by default (`enableAlerts` / `enable_alerts`). `defender.bicep` (`modules/defender`) turns on Defender for Cloud plans `AI`, `Arm`, `CosmosDbs` and `KeyVaults` only when `enableDefender` / `enable_defender` is true, because those plans apply to the whole subscription and are billed per resource.
+6. CI builds the Bicep; the `infra` workflow runs `terraform fmt`, `validate`, `test`, tflint and checkov. Deploy and teardown workflows exist but need Azure credentials and are not run.
 
 ## 4. Key files
 
@@ -44,11 +47,11 @@ Cost profiles in `main.bicep`:
 
 <!-- code: infra/main.bicep:56-60 -->
 ```bicep
-var profiles = {
-  'cost-min': { apim: 'Consumption', search: 'basic', serviceBus: 'Basic', minReplicas: 0, logQuotaGb: 1 }
-  standard: { apim: 'Developer', search: 'standard', serviceBus: 'Standard', minReplicas: 1, logQuotaGb: -1 }
-}
-var p = profiles[costProfile]
+param docIntelSku string = 'S0'
+@allowed(['F0', 'S0'])
+param contentSafetySku string = 'S0'
+
+param apimPublisherEmail string = 'noreply@example.com'
 ```
 <!-- /code -->
 
@@ -67,7 +70,7 @@ resource o1 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
 
 ## 6. Configuration
 
-Parameters in `infra/main.parameters.json`: `environmentName`, `location`, `principalId`, `costProfile` (`cost-min` or `standard`), `privateLink`, `deployVendorStandins`, model names and capacity.
+Parameters in `infra/main.parameters.json`: `environmentName`, `location`, `principalId`, `costProfile` (`cost-min` or `standard`), `privateLink`, `deployVendorStandins`, model names and capacity. Monitoring: `enableAlerts` (default `true`), `alertEmail` (default empty: alerts fire in Azure Monitor but notify nobody), `enableDefender` (default `false`) and `defenderPlans`. Terraform uses the same names in snake case.
 
 ## 7. Commands
 
@@ -82,11 +85,14 @@ terraform -chdir=infra/terraform init -backend=false && terraform -chdir=infra/t
 <!-- output: ls infra/modules -->
 ```text
 README.md
+alerts.bicep
 apim.bicep
 cognitive.bicep
 containerapp.bicep
 containerapps-env.bicep
 cosmos.bicep
+defender.bicep
+diagnostics.bicep
 foundry.bicep
 identity.bicep
 keyvault.bicep
@@ -106,12 +112,14 @@ tests/test_infra.py::test_azure_yaml_services_match_container_app_tags
 tests/test_infra.py::test_cost_min_is_default_and_private_link_off
 tests/test_infra.py::test_no_local_auth_on_data_services
 tests/test_infra.py::test_bicep_builds_cleanly
+tests/test_infra.py::test_bicep_matches_terraform_for_nsgs
+tests/test_infra.py::test_alerts_diagnostics_and_defender_match_in_both_tools
 ```
 <!-- /output -->
 
 ## 9. Tests and eval gates
 
-`tests/test_infra.py` checks service tags, the default profile, disabled local auth and that Bicep builds (skipped where `az` is missing). Terraform plan tests run in the `infra` workflow.
+`tests/test_infra.py` checks service tags, the default profile, disabled local auth, that Bicep builds (skipped where `az` is missing), that both tools put an NSG on both subnets, and that the alert rule names, diagnostic targets and Defender defaults match between Bicep and Terraform. Terraform plan tests (`dev_cost_min`, `defender_opt_in`, `prod_private`) run in the `infra` workflow and assert the alert counts, the 8 diagnostic settings, Defender off by default and the NSG under private link.
 
 ## 10. Guardrails
 
@@ -121,11 +129,12 @@ tests/test_infra.py::test_bicep_builds_cleanly
 ## 11. Security and governance
 
 - Managed identity everywhere; local auth disabled on Cosmos DB, Service Bus, Search and Cognitive Services.
-- Private endpoints with `privateLink=true`.
+- Private endpoints with `privateLink=true`, and one NSG on both the Container Apps and private-endpoint subnets (Bicep and Terraform match).
+- Opt-in Microsoft Defender for Cloud plans (`enableDefender`); off by default because they are subscription-wide and billed.
 
 ## 12. Observability
 
-Log Analytics and Application Insights are provisioned first and wired into every app.
+Log Analytics and Application Insights are provisioned first and wired into every app. Diagnostic settings send resource logs and metrics from Foundry, Search, Document Intelligence, Content Safety, Cosmos DB, Service Bus, Key Vault and the registry to the same workspace, and 7 alert rules route to one action group. Thresholds are starting points, not tuned against real traffic.
 
 ## 13. Failure modes
 
@@ -141,10 +150,13 @@ Container Apps, API Management, Microsoft Foundry, Azure AI Search, Content Safe
 ## 15. Limitations
 
 - Never deployed from this repository; costs are estimates in `docs/cost-estimate.md`.
+- The alert rules, diagnostic settings and Defender plans have only been built and plan-tested offline. Metric names follow the Azure Monitor reference but have not fired against real resources, and the thresholds are untuned.
+- The NSG uses default rules only; tighten per client policy.
 
 ## 16. Interview talking points
 
-- Two IaC flavours of the same design, both tested offline.
+- Two IaC flavours of the same design, both tested offline, with a test that fails if their alert rules or NSGs drift apart.
+- Why Defender is opt-in: it is a subscription-wide billing decision, not a per-workload toggle.
 
 ## 17. Adopt this
 

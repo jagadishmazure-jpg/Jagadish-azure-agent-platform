@@ -1,6 +1,6 @@
 # `infra/terraform`: Terraform twin of the Bicep
 
-The same platform as [`../main.bicep`](../main.bicep), written for Terraform (`azurerm` + `azapi`): resource group, two workload identities (orchestrator / tools), Log Analytics + App Insights, Microsoft Foundry account + project + chat and embedding deployments, AI Search, Document Intelligence, Content Safety, serverless Cosmos DB, Service Bus, Key Vault, ACR, the Container Apps environment and apps (BFF, A2A agents, MCP servers, optional stand-ins), APIM, optional private networking, and the least-privilege role assignments from [`roles.bicep`](../modules/roles.bicep). Output names match the Bicep outputs, so the scripts and the pipeline work with either tool.
+The same platform as [`../main.bicep`](../main.bicep), written for Terraform (`azurerm` + `azapi`): resource group, two workload identities (orchestrator / tools), Log Analytics + App Insights, Microsoft Foundry account + project + chat and embedding deployments, AI Search, Document Intelligence, Content Safety, serverless Cosmos DB, Service Bus, Key Vault, ACR, the Container Apps environment and apps (BFF, A2A agents, MCP servers, optional stand-ins), APIM, optional private networking, Azure Monitor alert rules and diagnostic settings, opt-in Defender for Cloud plans, and the least-privilege role assignments from [`roles.bicep`](../modules/roles.bicep). Output names match the Bicep outputs, so the scripts and the pipeline work with either tool.
 
 ## Bicep or Terraform?
 
@@ -25,7 +25,7 @@ Trade-offs to state up front:
 | Names | `<abbr>-<uniqueString>` (azd style) | CAF: `rg-agentplat-dev-eus2-001`, `kv-agentplat-dev-001`, ... |
 | Tags | `azd-env-name`, `workload`, `costProfile` | `env`, `owner`, `project`, `cost-center`, `workload`, `cost-profile`, `managed-by` |
 | App lookup | `azd-service-name` tag | `service-name` tag (azd is not used with Terraform) |
-| Private networking | VNet, subnets, DNS zones | the same plus an NSG on both subnets |
+| Private networking | VNet, subnets, DNS zones, one NSG on both subnets | the same |
 | Hardening extras | - | Service Bus system identity, Cosmos key-based metadata writes off |
 
 Deploy with one tool per environment (see below).

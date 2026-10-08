@@ -1,5 +1,6 @@
 // Optional private networking (privateLink=true): VNet with a Container Apps infrastructure subnet
-// and a private-endpoint subnet, plus private DNS zones linked to the VNet.
+// and a private-endpoint subnet, plus private DNS zones linked to the VNet. One NSG on both
+// subnets, matching infra/terraform/modules/network.
 param location string
 param tags object
 param resourceToken string
@@ -15,6 +16,14 @@ var zones = [
   'privatelink.servicebus.windows.net'
 ]
 
+// One NSG for both subnets (default rules only; tighten per client policy), as in Terraform.
+resource nsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
+  name: 'nsg-vnet-${resourceToken}'
+  location: location
+  tags: tags
+  properties: { securityRules: [] }
+}
+
 resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
   name: 'vnet-${resourceToken}'
   location: location
@@ -26,12 +35,13 @@ resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
         name: 'aca'
         properties: {
           addressPrefix: cidrSubnet(addressPrefix, 23, 0)
+          networkSecurityGroup: { id: nsg.id }
           delegations: [{ name: 'aca', properties: { serviceName: 'Microsoft.App/environments' } }]
         }
       }
       {
         name: 'pe'
-        properties: { addressPrefix: cidrSubnet(addressPrefix, 24, 2), privateEndpointNetworkPolicies: 'Disabled' }
+        properties: { addressPrefix: cidrSubnet(addressPrefix, 24, 2), networkSecurityGroup: { id: nsg.id }, privateEndpointNetworkPolicies: 'Disabled' }
       }
     ]
   }
@@ -51,6 +61,7 @@ resource links 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01
 }]
 
 output vnetId string = vnet.id
+output nsgId string = nsg.id
 output acaSubnetId string = vnet.properties.subnets[0].id
 output peSubnetId string = vnet.properties.subnets[1].id
 output zoneIds object = {

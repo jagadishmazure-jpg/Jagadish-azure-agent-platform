@@ -1,6 +1,6 @@
 # `tests/`: offline test suite
 
-The pytest suite (114 tests). Everything runs offline: `conftest.py` forces `AAP_MODE=offline`,
+The pytest suite (116 tests). Everything runs offline: `conftest.py` forces `AAP_MODE=offline`,
 writes file checkpoints to a temp directory instead of the working tree and resets the kill
 switch around every test. A2A calls go through the in-process ASGI mesh; no Azure resources,
 network or Docker are required.
@@ -23,7 +23,7 @@ network or Docker are required.
 Numbers in brackets are test counts from `pytest --collect-only`.
 
 ```bash
-pytest -q                                   # all 114
+pytest -q                                   # all 116
 pytest tests/test_mortgage_workflow.py -k outage
 ruff check . && ruff format --check .       # lint, as in CI
 ```

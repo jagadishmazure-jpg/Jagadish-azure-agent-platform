@@ -4,4 +4,4 @@ Offline plan tests. `terraform test` runs `plan` against mocked `azurerm` / `aza
 
 | File | What it does |
 |---|---|
-| [`plan.tftest.hcl`](plan.tftest.hcl) | Offline `terraform test`: plans with mocked providers and asserts naming, tags and the per-profile shape. No Azure credentials needed. |
+| [`plan.tftest.hcl`](plan.tftest.hcl) | Offline `terraform test`: plans with mocked providers and asserts naming, tags, the per-profile shape, the alert rules and diagnostic settings, Defender off by default and the NSG under private link. No Azure credentials needed. |
