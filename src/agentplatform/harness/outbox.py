@@ -16,7 +16,8 @@ class OutboxError(RuntimeError):
 
 
 class Outbox(Protocol):
-    def send(self, queue: str, payload: dict[str, Any], idempotency_key: str) -> str: ...
+    def send(self, queue: str, payload: dict[str, Any], idempotency_key: str) -> str:
+        """Enqueue ``payload`` once per ``idempotency_key`` and return the message id."""
 
 
 @dataclass

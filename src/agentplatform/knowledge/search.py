@@ -88,7 +88,8 @@ class SearchHit:
 
 
 class SearchBackend(Protocol):
-    def search(self, q: SearchQuery) -> list[SearchHit]: ...
+    def search(self, q: SearchQuery) -> list[SearchHit]:
+        """Return ranked hits for ``q``."""
 
 
 def load_corpus(name: str = "guidelines") -> list[Chunk]:

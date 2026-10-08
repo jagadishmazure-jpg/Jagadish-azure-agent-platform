@@ -9,15 +9,14 @@ from typing import Any
 
 from opentelemetry import trace
 
-_configured = False
+_STATE = {"configured": False}
 
 
 def configure_tracing(service_name: str, connection_string: str | None = None) -> str:
     """Idempotent. Returns which backend was configured."""
-    global _configured
-    if _configured:
+    if _STATE["configured"]:
         return "already-configured"
-    _configured = True
+    _STATE["configured"] = True
     conn = connection_string or os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING", "")
     os.environ.setdefault("OTEL_SERVICE_NAME", service_name)
     if conn:

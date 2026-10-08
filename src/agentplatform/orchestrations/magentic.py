@@ -32,6 +32,11 @@ MANAGER_INSTRUCTIONS = (
 )
 
 
+def _field(answer: object, reason: str = "") -> dict[str, object]:
+    """One entry of the Magentic progress ledger."""
+    return {"reason": reason, "answer": answer}
+
+
 class ManagerScript:
     """Deterministic stand-in for the manager model, keyed on StandardMagenticManager's prompts."""
 
@@ -59,16 +64,15 @@ class ManagerScript:
         todo = [lane for lane in LANES if lane not in done and lane not in self._given_up()]
         nxt = todo[0] if todo else "underwriter"
         progress = not (last_author in LANES and "FLAGS:" not in last_text)
-        item = lambda answer, reason="": {"reason": reason, "answer": answer}  # noqa: E731
         return json.dumps(
             {
-                "is_request_satisfied": item(decided, "underwriter issued a decision" if decided else ""),
-                "is_in_loop": item(False),
-                "is_progress_being_made": item(
+                "is_request_satisfied": _field(decided, "underwriter issued a decision" if decided else ""),
+                "is_in_loop": _field(False),
+                "is_progress_being_made": _field(
                     progress, "" if progress else f"{last_author} gave no findings"
                 ),
-                "next_speaker": item(nxt),
-                "instruction_or_question": item(
+                "next_speaker": _field(nxt),
+                "instruction_or_question": _field(
                     f"{nxt}: report your findings for this loan."
                     if nxt != "underwriter"
                     else "underwriter: consolidate the FLAGS lines into conditions and a decision."
