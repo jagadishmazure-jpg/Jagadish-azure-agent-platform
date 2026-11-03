@@ -9,7 +9,7 @@
 - **Cost-minimized infrastructure as code:** Bicep templates for `azd up` (cost-min profile by default, not deployed yet); 116 automated tests plus eval release gates run in CI.
 - **Terraform + Bicep, GitHub Actions deploy:** the same infrastructure in both tools ([`infra/terraform`](infra/terraform/README.md)), and a GitHub Actions pipeline with OIDC login (no secrets), a Bicep/Terraform choice, and dev -> prod approval gates. The pipeline is gated off until a subscription exists ([docs/deployment.md](docs/deployment.md)).
 
-**Skills demonstrated:** Azure AI Foundry, Microsoft Agent Framework, Azure OpenAI, Azure AI Search, Document Intelligence, Content Safety, MCP, A2A, Bicep/azd, Container Apps, APIM, Cosmos DB, Service Bus, Python.
+**Skills demonstrated:** Microsoft Foundry, Microsoft Agent Framework, Azure OpenAI, Azure AI Search, Document Intelligence, Content Safety, MCP, A2A, Bicep/azd, Container Apps, APIM, Cosmos DB, Service Bus, Python.
 
 *Honesty note: it runs fully offline with deterministic mocks and has not been deployed to live Azure yet (see [Honest limitations](#honest-limitations)).*
 
