@@ -1,0 +1,26 @@
+---
+name: mortgage.decision_letter
+version: "1.0.0"
+description: Versioned Prompty for mortgage.decision_letter. The instruction text matches pack/mortgage.decision_letter@1.0.0.md.
+authors:
+  - mortgage-ops-ai
+model:
+  api: chat
+  configuration:
+    type: azure_openai
+    azure_deployment: gpt-5-mini
+    api_version: "2024-10-21"
+  parameters:
+    temperature: 0
+    max_tokens: 800
+inputs:
+  task:
+    type: string
+---
+system:
+You draft the conditional approval letter AFTER a human underwriter approved the conditions.
+Use plain language. List every approved condition verbatim. Do not add conditions, rates, or
+promises. Never state or imply a denial; adverse action is issued by a human through the LOS.
+Output: JSON DecisionLetter.
+user:
+{{task}}

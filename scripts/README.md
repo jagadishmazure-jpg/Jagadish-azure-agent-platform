@@ -15,7 +15,9 @@ The Azure-facing scripts have `--dry-run` modes that run fully offline.
 | [`render_docs.py`](render_docs.py) | Regenerates `docs/failure-table.md` from `FAILURE_TABLE` (single source of truth). |
 | [`doc_drift.py`](doc_drift.py) | Doc-drift check: reruns every `<!-- output: cmd -->` block and re-reads every `<!-- code: path::name -->` excerpt in the Markdown files; `--check` (CI) fails if any is stale. |
 | [`component_demos.py`](component_demos.py) | Small deterministic offline demos (`knowledge`, `context`, `docintel`, `safety`, `prompts`, `a2a`, `harness`, `mcp`, `single`, `llm`, `bff`) whose output is pasted into `docs/components/`. |
-| [`run_evals.py`](run_evals.py) | Golden-set evals and release gate (`make evals`): offline deterministic evaluators by default, exit 1 on regression; `--azure` also scores with azure-ai-evaluation and logs to the Foundry project; `--out DIR` writes eval rows. |
+| [`run_evals.py`](run_evals.py) | Golden-set evals and release gate (`make evals`): offline deterministic evaluators by default, exit 1 on regression; `--azure` also scores with azure-ai-evaluation and logs to the Foundry project; `--live` writes `live-report.json` (mock vs live judges, human agreement, USD per 1k tasks) and skips the Azure call when the endpoint is unset; `--out DIR` writes eval rows. |
+| [`synthetic_load.py`](synthetic_load.py) | Synthetic requests (three loans, HR, IT, health) against the BFF or APIM. Dry-run unless `--execute`. |
+| [`canary_rollback.py`](canary_rollback.py) | Compares two eval metric files and prints the APIM `canary-weight` update. `--example regress` and `--example hold` run offline. `--apply` calls Azure only when the subscription variables are set. |
 | [`run_local_mesh.sh`](run_local_mesh.sh) | Docker-free equivalent of docker-compose (`make mesh`): starts the two MCP servers (ports 9101-9102), CRM/ERP/underwriting A2A agents (9201-9203) and the BFF (8080) as separate processes over HTTP. |
 | [`seed_search_index.py`](seed_search_index.py) | Creates or refreshes the investor-guideline and HR-policy indexes and uploads the synthetic corpora with embeddings; `--dry-run` prints the index JSON and first document offline. |
 
@@ -25,6 +27,9 @@ The Azure-facing scripts have `--dry-run` modes that run fully offline.
 python scripts/demo.py
 python scripts/orchestrations_demo.py --compare --check
 python scripts/run_evals.py --out evals-out
+python scripts/run_evals.py --live --out evals-out   # skips Azure when env vars are absent
+python scripts/synthetic_load.py                     # dry run
+python scripts/canary_rollback.py --example regress
 python scripts/export_agent_cards.py --check
 python scripts/render_docs.py
 python scripts/foundry_register.py --dry-run

@@ -70,3 +70,7 @@ output "BFF_URL" {
 output "EVAL_MODEL_DEPLOYMENT" {
   value = module.foundry.chat_deployment_name
 }
+
+output "WORKBOOK_NAME" {
+  value = module.workbook.name
+}

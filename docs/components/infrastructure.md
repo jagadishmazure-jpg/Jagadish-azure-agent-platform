@@ -29,7 +29,7 @@ flowchart TB
 3. `roles.bicep` grants the workload identity data-plane roles; local auth is disabled on data services.
 4. `infra/terraform` mirrors the same design with plan tests that use mocked providers.
 5. `alerts.bicep` (Terraform `modules/alerts`) creates an action group, 4 metric alert rules (Service Bus dead letters, Key Vault availability, Foundry and Content Safety server errors) and 3 KQL rules on Application Insights (failed requests, exceptions, failing dependencies); `diagnostics.bicep` sends `allLogs` and `AllMetrics` from the 8 data and AI resources to Log Analytics. Both are on by default (`enableAlerts` / `enable_alerts`). `defender.bicep` (`modules/defender`) turns on Defender for Cloud plans `AI`, `Arm`, `CosmosDbs` and `KeyVaults` only when `enableDefender` / `enable_defender` is true, because those plans apply to the whole subscription and are billed per resource.
-6. CI builds the Bicep; the `infra` workflow runs `terraform fmt`, `validate`, `test`, tflint and checkov. Deploy and teardown workflows exist but need Azure credentials and are not run.
+6. CI builds the Bicep; the `infra` workflow runs `terraform fmt`, `validate`, `test`, tflint and checkov. Deploy and teardown workflows are manual, use OIDC, and have not been run. `azd show` parses `azure.yaml` without a subscription.
 
 ## 4. Key files
 
@@ -39,7 +39,7 @@ flowchart TB
 | `infra/modules/*.bicep` | one module per resource type |
 | `infra/terraform/` | Terraform equivalent |
 | `.github/workflows/infra.yml`, `deploy.yml`, `teardown.yml` | validation, gated deploy, teardown |
-| `tests/test_infra.py` | static checks |
+| `tests/test_infra.py` | static checks, including `azd show` |
 
 ## 5. Code excerpts
 
@@ -84,7 +84,6 @@ terraform -chdir=infra/terraform init -backend=false && terraform -chdir=infra/t
 
 <!-- output: ls infra/modules -->
 ```text
-README.md
 alerts.bicep
 apim.bicep
 cognitive.bicep
@@ -99,10 +98,12 @@ keyvault.bicep
 monitoring.bicep
 network.bicep
 private-endpoint.bicep
+README.md
 registry.bicep
 roles.bicep
 search.bicep
 servicebus.bicep
+workbook.bicep
 ```
 <!-- /output -->
 
@@ -112,6 +113,9 @@ tests/test_infra.py::test_azure_yaml_services_match_container_app_tags
 tests/test_infra.py::test_cost_min_is_default_and_private_link_off
 tests/test_infra.py::test_no_local_auth_on_data_services
 tests/test_infra.py::test_bicep_builds_cleanly
+tests/test_infra.py::test_deploy_workflow_is_manual_with_oidc
+tests/test_infra.py::test_canary_and_workbook_are_in_both_tools
+tests/test_infra.py::test_azd_project_config
 tests/test_infra.py::test_bicep_matches_terraform_for_nsgs
 tests/test_infra.py::test_alerts_diagnostics_and_defender_match_in_both_tools
 ```

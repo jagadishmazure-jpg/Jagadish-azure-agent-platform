@@ -6,14 +6,14 @@
 - **Survives crashes:** the workflow checkpoints its state, so a restarted process resumes the loan where it left off instead of starting over (covered by tests).
 - **Governed agent-to-agent (A2A) calls:** CRM, ERP and underwriting agents publish agent cards; a directory controls who may call whom, requires an eval score before promotion, and has a kill switch.
 - **All five Microsoft Agent Framework built-in orchestrations** (sequential, concurrent, handoff, group chat, Magentic) run on the same loan review and are compared side by side.
-- **Cost-minimized infrastructure as code:** Bicep templates for `azd up` (cost-min profile by default, not deployed yet); 116 automated tests plus eval release gates run in CI.
-- **Terraform + Bicep, GitHub Actions deploy:** the same infrastructure in both tools ([`infra/terraform`](infra/terraform/README.md)), and a GitHub Actions pipeline with OIDC login (no secrets), a Bicep/Terraform choice, and dev -> prod approval gates. The pipeline is gated off until a subscription exists ([docs/deployment.md](docs/deployment.md)).
+- **Cost-minimized infrastructure as code:** Bicep templates for `azd up` (cost-min profile by default, not deployed yet); 132 automated tests plus eval release gates run in CI.
+- **Terraform + Bicep, GitHub Actions deploy:** the same infrastructure in both tools ([`infra/terraform`](infra/terraform/README.md)), and a GitHub Actions pipeline with OIDC login (no secrets), a Bicep/Terraform choice, and dev -> prod approval gates. Deploy runs only when someone starts it and types `deploy` ([docs/deployment.md](docs/deployment.md)).
 
 **Skills demonstrated:** Microsoft Foundry, Microsoft Agent Framework, Azure OpenAI, Azure AI Search, Document Intelligence, Content Safety, MCP, A2A, Bicep/azd, Container Apps, APIM, Cosmos DB, Service Bus, Python.
 
 *Honesty note: it runs fully offline with deterministic mocks and has not been deployed to live Azure yet (see [Honest limitations](#honest-limitations)).*
 
-**Contents:** [What](#at-a-glance-for-recruiters) · [Why](#why-it-exists) · [Architecture](#architecture-four-planes) · [Run](#run-locally-offline-no-azure) · [Test](#test) · [Deploy](#deploy-to-azure) · [Limits](#honest-limitations) · [Docs](#documentation)
+**Contents:** [What](#at-a-glance-for-recruiters) · [Why](#why-it-exists) · [Architecture](#architecture-four-planes) · [Run](#run-locally-offline-no-azure) · [Test](#test) · [Deploy](#deploy-to-azure) · [Go live](#go-live) · [Limits](#honest-limitations) · [Docs](#documentation)
 
 An Azure-native agentic AI platform showcase: a **mortgage loan origination and underwriting-conditions multi-agent system** built on **Microsoft Agent Framework (MAF) 1.x** and **Microsoft Foundry**, plus:
 
@@ -154,7 +154,7 @@ The platform pieces carry over across industries. Only the prompts, tools, corpo
 ```bash
 python -m venv .venv && . .venv/bin/activate && pip install -e ".[dev]"
 make lint            # ruff check + ruff format --check
-make test            # pytest (116 tests, offline)
+make test            # pytest (132 tests, offline)
 make demo            # underwrite L-1001 / L-1002 / L-1003, approve, print letters
 make orchestrations  # the five MAF orchestration patterns + comparison table
 make evals           # golden-set eval gate
@@ -182,7 +182,7 @@ The demo produces three outcomes:
 ## Test
 
 ```bash
-make lint && make test                        # ruff + 116 offline tests
+make lint && make test                        # ruff + 132 offline tests
 make evals                                    # golden-set eval gate (fails on regression)
 python scripts/export_agent_cards.py --check  # agent cards match the code
 make bicep                                    # bicep build, no warnings
@@ -197,7 +197,89 @@ CI runs the same checks on every push ([`.github/workflows/`](.github/workflows/
 azd auth login && azd env new aap-dev --location eastus2 && azd up
 ```
 
-The postprovision hook seeds AI Search, registers the Foundry agents, and checks the agent cards. For details, see [docs/deploy.md](docs/deploy.md). For resources, SKUs, and billing dimensions, see [docs/cost-estimate.md](docs/cost-estimate.md). **Tear down with `azd down --purge`.** CI (`.github/workflows/ci.yml`) runs lint, tests, the card-freshness check, the eval gate, and `bicep build`; `infra.yml` validates, tests, lints and scans the Terraform twin in [`infra/terraform`](infra/terraform/README.md). The GitHub Actions deploy pipeline (Bicep or Terraform, OIDC, dev -> prod with approval) is described in [docs/deployment.md](docs/deployment.md) and stays disabled unless `DEPLOY_ENABLED=true`.
+The postprovision hook seeds AI Search, registers the Foundry agents, and checks the agent cards. For details, see [docs/deploy.md](docs/deploy.md). For resources, SKUs, and billing dimensions, see [docs/cost-estimate.md](docs/cost-estimate.md). **Tear down with `azd down --purge`.** CI (`.github/workflows/ci.yml`) runs lint, tests, the card-freshness check, the eval gate, and `bicep build`; `infra.yml` validates, tests, lints and scans the Terraform twin in [`infra/terraform`](infra/terraform/README.md). The GitHub Actions deploy pipeline (Bicep or Terraform, OIDC, dev then prod with environment approval) is manual: [docs/deployment.md](docs/deployment.md) and [Go live](#go-live).
+
+## Go live
+
+Nothing in this repository has been deployed. The steps below are the ones to run when a subscription is available. Mock mode stays the default, so `make test` does not need Azure.
+
+### What `azd up` creates
+
+Container Apps (BFF, three A2A agents, two MCP servers) on a Consumption environment that scales to zero, images in ACR (remote build, admin user off), Microsoft Foundry with a chat deployment and an embeddings deployment, Azure AI Search, Cosmos DB serverless for workflow checkpoints, Key Vault (RBAC, no secrets in code), Log Analytics and Application Insights, and API Management in front of the BFF. Workload calls use two user-assigned managed identities. The operations workbook **Agent platform operations** is created from the KQL in [`observability/`](observability/README.md).
+
+### Steps
+
+```bash
+azd auth login
+azd env new aap-dev --location eastus2
+azd env set AAP_COST_PROFILE cost-min
+azd env set AAP_APIM_PUBLISHER_EMAIL you@example.com
+azd up
+```
+
+`azd up` provisions `infra/main.bicep`, runs `scripts/postprovision.sh` (seed Search, register the Foundry agents), then builds the three Dockerfiles in ACR and rolls the Container Apps.
+
+```bash
+azd env get-values > .env
+set -a && . ./.env && set +a
+# Paste BFF_URL into the live URL line below.
+python scripts/synthetic_load.py --base-url "$BFF_URL" --rounds 3          # prints the plan
+python scripts/synthetic_load.py --base-url "$BFF_URL" --rounds 3 --execute # sends it
+python scripts/run_evals.py --live --out evals-out                          # judges via Azure OpenAI
+```
+
+Live evals call the Azure AI Evaluation SDK (Groundedness and Relevance) when `AZURE_OPENAI_ENDPOINT` and `EVAL_MODEL_DEPLOYMENT` (or `FOUNDRY_MODEL`) are set. `azd up` writes both. If they are absent the command still runs the offline gate, writes `live-report.json` with `"skipped": true`, and exits 0. Set `LANGSMITH_API_KEY` and `LANGSMITH_PROJECT` and `pip install -e ".[live]"` to also log a LangSmith experiment; without the key that part is skipped. The report includes mock release-gate scores, the live judge scores, agreement with [`human_labels.jsonl`](src/agentplatform/evals/golden/human_labels.jsonl), and USD per 1k tasks at the illustrative rates in `src/agentplatform/evals/pricing.py`.
+
+Canary routing is in API Management. Named values `prompt-stable` (`mortgage.critic@1.0.0`) and `prompt-canary` (`mortgage.critic@1.1.0`) are the two Prompty versions; `canary-weight` defaults to **0**, so every request stays on stable until you raise it. The offline decision (no Azure call):
+
+```bash
+python scripts/canary_rollback.py --example regress   # weight goes to 0
+python scripts/canary_rollback.py --example hold      # weight stays
+```
+
+On a live environment, pass the two eval JSON files. `--apply` updates the named value only when `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP` and `APIM_NAME` are set. Prompt runs are recorded with MLflow when `MLFLOW_TRACKING_URI` is set and `pip install -e ".[llmops]"` has been run; otherwise the same record is appended under `llmops-out/`.
+
+GitHub Actions, instead of a laptop `azd up`:
+
+1. Create the Entra app and the federated credential (issuer `https://token.actions.githubusercontent.com`, audience `api://AzureADTokenExchange`, subject `repo:<org>/<repo>:environment:dev` and the same for `prod`). No client secret.
+2. Create GitHub Environments `dev` and `prod` with required reviewers.
+3. Set Actions variables `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` (and the Terraform state variables if you pick Terraform). Not secrets.
+4. Actions -> **deploy** -> Run workflow. Set `confirm` to `deploy`. Prod waits for its reviewers.
+
+The full checklist is [docs/deployment.md](docs/deployment.md). Tear down with `azd down --purge --force` or the manual `teardown.yml` workflow.
+
+### Expected cost
+
+Figures are list-price illustrations for the `cost-min` profile so you can see the shape of the bill. Recheck them in the [Azure pricing calculator](https://azure.microsoft.com/pricing/calculator/) before `azd up`. Billing dimensions and the idle-vs-usage split are in [docs/cost-estimate.md](docs/cost-estimate.md).
+
+| What | Illustrative USD |
+|---|---|
+| A quiet month (Search Basic + ACR Basic; everything else scaled to zero or pay-per-call) | about 80 |
+| Azure AI Search Basic, 1 search unit, the hourly piece | about 75 |
+| Container Registry Basic | about 5 |
+| Foundry tokens, Container Apps at 0 replicas, APIM Consumption, Cosmos serverless, Service Bus Basic, Key Vault, Log Analytics under the 1 GB cap | about 0 until you call them |
+| One `--live` eval of this golden set plus one synthetic-load pass | usually under 1, at the rates in `pricing.py` |
+
+The workbook and the canary named values do not add a standing charge. Private Link and Defender for Cloud are off by default; turning them on is the expensive change. Delete the resource group when the demo is over.
+
+### Live URL
+
+Not deployed. After `azd up`, replace the value below with the `BFF_URL` output.
+
+```
+https://<bff-fqdn>
+```
+
+### Screenshots
+
+Not captured. After the first deployment, add the four files listed in [docs/go-live/README.md](docs/go-live/README.md):
+
+| Capture | File |
+|---|---|
+| Container Apps | `docs/go-live/container-apps.png` |
+| Foundry deployment | `docs/go-live/foundry.png` |
+| Operations workbook | `docs/go-live/workbook.png` |
+| Live eval report | `docs/go-live/live-eval.png` |
 
 ## Doctrine card: mortgage underwriting-conditions system
 
@@ -225,14 +307,15 @@ The postprovision hook seeds AI Search, registers the Foundry agents, and checks
 ## Repo layout
 
 ```
-src/agentplatform/   config · harness/ · prompts/ · context/ · knowledge/ · docintel/ · llm/ · safety/
+src/agentplatform/   config · harness/ · prompts/ · context/ · knowledge/ · docintel/ · llm/ · llmops/ · safety/
                      mcp_servers/ · mortgage/ · orchestrations/ · a2a/ · single/ · evals/ · bff.py
 control-plane/       agent-cards/*.json (+ _policy.json), generated by scripts/export_agent_cards.py
 infra/               main.bicep, main.parameters.json, modules/*.bicep, terraform/ (Terraform twin)
 services/            bff/, a2a/, mcp/ Dockerfiles
-scripts/             foundry_register · seed_search_index · run_evals · export_agent_cards · render_docs · demo · orchestrations_demo · run_local_mesh · postprovision
+scripts/             foundry_register · seed_search_index · run_evals · synthetic_load · canary_rollback · export_agent_cards · render_docs · demo · orchestrations_demo · run_local_mesh · postprovision
+observability/       KQL for the Application Insights workbook
 docs/                components/ · implementation-guide · adopt-this · architecture · orchestration-patterns · engineering-layers · failure-table · cost-estimate · deploy · deployment · sdk-notes · best-practices · adr/
-tests/               116 offline tests (pytest)
+tests/               132 offline tests (pytest)
 ```
 
 ### Repository map
@@ -243,7 +326,8 @@ Every folder has its own README with a file-by-file table:
 |---|---|
 | [`src/agentplatform/`](src/agentplatform/README.md) | Python package overview and module map |
 | [`src/agentplatform/harness/`](src/agentplatform/harness/README.md) | Five-exit failure handling, budgets, resilience, kill switch, outbox, tracing, identity |
-| [`src/agentplatform/prompts/`](src/agentplatform/prompts/README.md) | Versioned prompt pack and registry (pack files documented here) |
+| [`src/agentplatform/prompts/`](src/agentplatform/prompts/README.md) | Versioned prompt pack, registry, and Prompty files |
+| [`src/agentplatform/llmops/`](src/agentplatform/llmops/README.md) | MLflow-shaped prompt/model runs and the canary rollback decision |
 | [`src/agentplatform/context/`](src/agentplatform/context/README.md) | Temporal/ACL-aware context builder |
 | [`src/agentplatform/knowledge/`](src/agentplatform/knowledge/README.md) | Hybrid retrieval (Azure AI Search or offline stand-in), index schema |
 | [`src/agentplatform/knowledge/data/`](src/agentplatform/knowledge/data/README.md) | Synthetic guideline and HR-policy data |
@@ -268,7 +352,8 @@ Every folder has its own README with a file-by-file table:
 | [`services/bff/`](services/bff/README.md) | BFF container |
 | [`services/a2a/`](services/a2a/README.md) | A2A agent container |
 | [`services/mcp/`](services/mcp/README.md) | MCP server container |
-| [`scripts/`](scripts/README.md) | Demo, evals, card export, Azure dry-run scripts |
+| [`scripts/`](scripts/README.md) | Demo, evals, synthetic load, canary simulation, card export, Azure dry-run scripts |
+| [`observability/`](observability/README.md) | KQL queries deployed as the Application Insights workbook |
 | [`docs/`](docs/README.md) | Architecture and engineering docs, best practices, ADRs ([`docs/adr/`](docs/adr/README.md)) |
 | [`tests/`](tests/README.md) | Offline test suite |
 | `.github/` | Workflows, deploy scripts and `CODEOWNERS` (`* @jagadishmazure-jpg`) |
@@ -278,10 +363,11 @@ Every folder has its own README with a file-by-file table:
 ## Honest limitations
 
 * The Azure code paths (Foundry, Search, DI, Content Safety, Cosmos, Service Bus, Azure Monitor) follow the verified SDK signatures but were **not executed against Azure**. No resources were created.
-* Bicep compiles cleanly (`bicep build`, 0 warnings). A real `azd provision` or what-if has not been run. The three service images are built and smoke-tested in CI (`infra.yml`), and the same topology runs over HTTP locally via `make mesh`.
+* Bicep compiles cleanly (`bicep build`, 0 warnings) and `azd show` parses `azure.yaml`. A real `azd provision` or what-if has not been run. The three service images are built and smoke-tested in CI (`infra.yml`), and the same topology runs over HTTP locally via `make mesh`.
 * All loans, borrowers, guidelines, and HR policies are synthetic. The "Dynamics 365-style", "Salesforce-style", and "SAP-style" agents are stand-ins, not vendor products.
-* The Terraform twin passes `validate`, offline `terraform test`, tflint and checkov, but no `terraform plan` has run against a subscription. The GitHub Actions deploy pipeline is switched off (`DEPLOY_ENABLED` is not set), and its GitHub Environments and reviewers do not exist yet.
-* Eval scores come from small synthetic golden sets and a deterministic mock model. They show the gates work, not how a real model would score. No fair-lending evaluation has been done.
+* The Terraform twin passes `validate`, offline `terraform test`, tflint and checkov, but no `terraform plan` has run against a subscription. Deploy is manual (`workflow_dispatch`, type `deploy`, GitHub Environment approval, OIDC). The Environments, reviewers and federated credentials do not exist yet, and the workflow has not been executed.
+* Eval scores in CI come from small synthetic golden sets and a deterministic mock model. `python scripts/run_evals.py --live` is ready to score those rows with Azure AI Evaluation SDK judges and skips when the endpoint is unset. It has not been run against Azure OpenAI. The human-label agreement number in the offline report is the lexical judge, not a live model. No fair-lending evaluation has been done.
+* The live URL and the screenshots in [Go live](#go-live) are empty on purpose.
 
 ## Documentation
 
@@ -291,7 +377,7 @@ Every folder has its own README with a file-by-file table:
 | [`docs/implementation-guide.md`](docs/implementation-guide.md) | How the platform is built, layer by layer, with the command and test that prove each step |
 | [`docs/adopt-this.md`](docs/adopt-this.md) | How another team reuses, configures and extends the platform without losing its controls |
 | [`docs/best-practices.md`](docs/best-practices.md) | Enterprise cloud and agentic AI practices, each marked implemented, written-not-deployed or planned, with links to the code |
-| [`docs/adr/`](docs/adr/README.md) | Architecture decision records (Bicep + Terraform, offline mocks, OIDC, eval gates, gated deploy, ...) |
+| [`docs/adr/`](docs/adr/README.md) | Architecture decision records (Bicep + Terraform, offline mocks, OIDC, eval gates, manual deploy, ...) |
 | [`docs/deployment.md`](docs/deployment.md) | The GitHub Actions pipeline and the one-time Azure setup it needs |
 | [`docs/architecture.md`](docs/architecture.md) · [`docs/engineering-layers.md`](docs/engineering-layers.md) · [`docs/failure-table.md`](docs/failure-table.md) | Planes and sequence, the eight engineering layers, the five-exit failure table |
 | [`SECURITY.md`](SECURITY.md) · [`CONTRIBUTING.md`](CONTRIBUTING.md) · [`CHANGELOG.md`](CHANGELOG.md) | How to report a vulnerability, how to contribute, what changed |

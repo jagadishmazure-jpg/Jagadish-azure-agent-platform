@@ -5,7 +5,7 @@ Reusable modules called by the root stack. Each one mirrors a file in [`../../mo
 | File | What it does |
 |---|---|
 | [`alerts/`](alerts/README.md) | Azure Monitor action group, metric alert rules, KQL log alert rules on Application Insights and diagnostic settings to Log Analytics. |
-| [`apim/`](apim/README.md) | API Management in front of the services: optional Entra ID JWT validation, spoofable-header stripping, rate limit, traceparent injection (and, in the agent platform, a kill-switch named value). |
+| [`apim/`](apim/README.md) | API Management in front of the services: optional Entra ID JWT validation, spoofable-header stripping, rate limit, traceparent injection, a kill switch, and canary weighted routing (weight defaults to 0). |
 | [`cognitive/`](cognitive/README.md) | Single-purpose Cognitive Services account (Document Intelligence or Content Safety), keyless, with a custom subdomain. |
 | [`containerapp/`](containerapp/README.md) | One Container App (HTTP service or KEDA queue worker) on a user-assigned identity, pulling from ACR with that identity. The image is ignored after creation because the pipeline rolls images. |
 | [`containerapps-env/`](containerapps-env/README.md) | Container Apps managed environment on the Consumption workload profile, logging to Log Analytics; optional VNet integration. |
@@ -21,3 +21,4 @@ Reusable modules called by the root stack. Each one mirrors a file in [`../../mo
 | [`registry/`](registry/README.md) | Azure Container Registry with the admin user disabled; `AcrPull` for the workload identities. |
 | [`search/`](search/README.md) | Azure AI Search with API keys disabled (Entra ID only), system-assigned identity and the free semantic-ranker plan. |
 | [`servicebus/`](servicebus/README.md) | Service Bus namespace (SAS disabled, TLS 1.2), queues with dead-lettering, and sender / receiver roles. |
+| [`workbook/`](workbook/README.md) | Application Insights workbook whose tiles are the KQL files in `observability/`. |

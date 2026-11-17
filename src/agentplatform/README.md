@@ -15,14 +15,15 @@ default; `AAP_MODE=azure` swaps each adapter for its Azure service, in one place
 | [`a2a/`](a2a/README.md) | A2A 1.0 fabric: agent catalog and cards, directory policy, server factory, client, local mesh. |
 | [`context/`](context/README.md) | The context builder every agent uses: retrieve, trim, screen, pack, cite. |
 | [`docintel/`](docintel/README.md) | Document Intelligence prebuilt models for paystubs, W-2s and bank statements (offline fixtures). |
-| [`evals/`](evals/README.md) | Golden sets, custom evaluators and the gated eval runner. |
+| [`evals/`](evals/README.md) | Golden sets, custom evaluators, the offline release gate, and the live-eval report. |
 | [`harness/`](harness/README.md) | Identity, budgets, kill switch, resilience, five-exit failure policy, outbox, tracing. |
 | [`knowledge/`](knowledge/README.md) | Temporal + ACL hybrid search (AI Search or in-memory) and graph RAG. |
 | [`llm/`](llm/README.md) | Chat clients: deterministic MAF mock offline, Foundry with fallback deployment on Azure. |
+| [`llmops/`](llmops/README.md) | Prompt/model run records (MLflow or a local file) and the canary rollback decision. |
 | [`mcp_servers/`](mcp_servers/README.md) | Credit bureau and LOS MCP servers plus the tool gateway. |
 | [`mortgage/`](mortgage/README.md) | The flagship MAF workflow for mortgage underwriting conditions. |
 | [`orchestrations/`](orchestrations/README.md) | MAF's five prebuilt multi-agent orchestrations (sequential, concurrent, handoff, group chat, Magentic) on a loan conditions review, with a measured comparison. |
-| [`prompts/`](prompts/README.md) | Versioned prompt pack bound to output schemas. |
+| [`prompts/`](prompts/README.md) | Versioned prompt pack bound to output schemas, plus Prompty files for the canary. |
 | [`safety/`](safety/README.md) | Content Safety and Prompt Shields gate. |
 | [`single/`](single/README.md) | Single-agent examples: HR policy and IT service desk. |
 
@@ -42,5 +43,5 @@ harness/ wraps every node: identity + traceparent, budgets, kill switch, retry/b
 ```bash
 uvicorn agentplatform.bff:app --port 8080       # in-process BFF (offline mocks)
 curl -X POST localhost:8080/loans/L-1001/underwrite
-pytest -q                                       # 116 offline tests
+pytest -q                                       # 132 offline tests
 ```

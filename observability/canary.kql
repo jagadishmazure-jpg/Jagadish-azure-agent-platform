@@ -1,0 +1,5 @@
+requests
+| where timestamp > ago(24h)
+| extend prompt = tostring(customDimensions["prompt_ref"])
+| summarize requests = count(), failed = countif(success == false), p95_ms = percentile(duration, 95) by prompt, bin(timestamp, 15m)
+| order by timestamp desc

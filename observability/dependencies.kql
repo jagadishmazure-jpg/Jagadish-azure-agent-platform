@@ -1,0 +1,5 @@
+dependencies
+| where timestamp > ago(24h)
+| extend target = tostring(target)
+| summarize calls = count(), failed = countif(success == false), p95_ms = percentile(duration, 95) by target, bin(timestamp, 15m)
+| order by timestamp desc

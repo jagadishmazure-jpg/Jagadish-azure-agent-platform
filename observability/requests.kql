@@ -1,0 +1,4 @@
+requests
+| where timestamp > ago(24h)
+| summarize requests = count(), failed = countif(success == false), p95_ms = percentile(duration, 95) by bin(timestamp, 5m)
+| order by timestamp desc

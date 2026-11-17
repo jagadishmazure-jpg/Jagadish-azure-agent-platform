@@ -14,7 +14,11 @@ jobs:
       - run: pip install -e ".[dev]"
       - name: Lint
         run: ruff check . && ruff format --check .
+      - name: Install Azure Developer CLI
+        env: { AZURE_DEV_COLLECT_TELEMETRY: "no" }
+        run: curl -fsSL https://aka.ms/install-azd.sh | bash
       - name: Tests (offline, mocks)
+        env: { AZURE_DEV_COLLECT_TELEMETRY: "no" }
         run: pytest -q
       - name: Agent cards are current
         run: python scripts/export_agent_cards.py --check

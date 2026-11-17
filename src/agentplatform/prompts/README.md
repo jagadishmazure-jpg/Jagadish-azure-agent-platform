@@ -11,7 +11,9 @@ otherwise.
 | [`__init__.py`](__init__.py) | Package docstring. |
 | [`registry.py`](registry.py) | `load_pack()` parses every `pack/*.md` file into a `PromptSpec` (`ref`, `sha`, `schema`); `PromptPack.get(id, version=None)` returns a pinned or latest version, `refs()` lists them. |
 | [`schemas.py`](schemas.py) | Output contracts for anything that feeds a write, a letter or a critic: `Narrative`, `ConditionOut`, `ConditionSet`, `CriticReport`, `DecisionLetter`, `PolicyAnswer`, `TicketTriage`. |
-| [`pack/`](pack/) | The prompt files themselves (documented below, no README inside). |
+| [`pack/`](pack/) | The markdown prompt files the agents load (documented below, no README inside). |
+| [`prompty.py`](prompty.py) | Loads the Prompty mirror: model, parameters, inputs, and `{{placeholders}}`. |
+| [`prompty/`](prompty/README.md) | Versioned `.prompty` files, including critic `1.0.0` and canary `1.1.0`. |
 
 ## `pack/` contents
 

@@ -322,6 +322,16 @@ module apim 'modules/apim.bicep' = {
   }
 }
 
+module workbook 'modules/workbook.bicep' = {
+  scope: rg
+  name: 'workbook'
+  params: {
+    location: location
+    tags: tags
+    appInsightsId: monitoring.outputs.appInsightsId
+  }
+}
+
 // ---- alerting, diagnostics and Defender for Cloud (built offline; not deployed) ----
 module alerts 'modules/alerts.bicep' = if (enableAlerts) {
   scope: rg
@@ -386,3 +396,4 @@ output AZURE_KEY_VAULT_URI string = keyVault.outputs.uri
 output APIM_GATEWAY_URL string = apim.outputs.gatewayUrl
 output BFF_URL string = containerApps[0].outputs.url
 output EVAL_MODEL_DEPLOYMENT string = foundry.outputs.chatDeploymentName
+output WORKBOOK_NAME string = workbook.outputs.name

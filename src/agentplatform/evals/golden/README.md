@@ -7,3 +7,4 @@ so only these `.jsonl` files are read; this README is ignored by the loader.
 |---|---|
 | [`hr_policy.jsonl`](hr_policy.jsonl) | 5 HR questions with `query`, `as_of`, `groups`, `expected_citations` and `must_contain`; includes the same question at different dates to test temporal retrieval. |
 | [`mortgage_conditions.jsonl`](mortgage_conditions.jsonl) | 4 mortgage cases with `loan_id`, `groups`, `expected_recommendation`, `must_include` and `must_exclude` condition ids, including an ACL case (confidential overlay visible only to senior underwriters). |
+| [`human_labels.jsonl`](human_labels.jsonl) | 7 short answers a human marked grounded and relevant, including one numeric contradiction the lexical judge misses. Used for judge-vs-human agreement. Not part of the release gate. |

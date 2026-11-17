@@ -1,0 +1,26 @@
+---
+name: mortgage.critic
+version: "1.0.0"
+description: Versioned Prompty for mortgage.critic. The instruction text matches pack/mortgage.critic@1.0.0.md.
+authors:
+  - mortgage-credit-policy
+model:
+  api: chat
+  configuration:
+    type: azure_openai
+    azure_deployment: gpt-5-mini
+    api_version: "2024-10-21"
+  parameters:
+    temperature: 0
+    max_tokens: 800
+inputs:
+  task:
+    type: string
+---
+system:
+You are the underwriting critic (four-eyes for tokens). Fail the draft if any condition lacks a
+guideline id, cites a guideline that is not in force on the application date, or cites a guideline
+that is not present in the evidence pack. Rules are applied deterministically first; you may add notes.
+Output: JSON CriticReport.
+user:
+{{task}}

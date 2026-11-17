@@ -38,6 +38,14 @@ module "monitoring" {
   daily_quota_gb      = local.p.log_quota_gb
 }
 
+module "workbook" {
+  source              = "./modules/workbook"
+  resource_group_name = azurerm_resource_group.this.name
+  location            = var.location
+  tags                = local.tags
+  app_insights_id     = module.monitoring.app_insights_id
+}
+
 module "network" {
   source              = "./modules/network"
   count               = var.private_link ? 1 : 0

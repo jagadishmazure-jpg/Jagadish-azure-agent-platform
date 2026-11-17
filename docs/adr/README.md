@@ -9,5 +9,6 @@ Short records of the decisions that shape this repo: the context at the time, wh
 | [`0002-offline-mocks-by-default.md`](0002-offline-mocks-by-default.md) | Run offline against deterministic mocks by default |
 | [`0003-oidc-and-managed-identity.md`](0003-oidc-and-managed-identity.md) | Use OIDC federation for CI and managed identities at runtime |
 | [`0004-eval-gates-block-release.md`](0004-eval-gates-block-release.md) | Eval gates block the build |
-| [`0005-deploy-gated-off.md`](0005-deploy-gated-off.md) | Ship the deploy pipeline switched off |
+| [`0005-deploy-gated-off.md`](0005-deploy-gated-off.md) | Ship the deploy pipeline switched off (superseded by 0007) |
 | [`0006-maf-graph-for-mortgage.md`](0006-maf-graph-for-mortgage.md) | Use a MAF graph for mortgage, single agents elsewhere |
+| [`0007-manual-deploy-approval.md`](0007-manual-deploy-approval.md) | Run deploy only from a manual workflow with environment approval and OIDC |

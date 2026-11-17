@@ -1,0 +1,25 @@
+---
+name: hr.policy
+version: "1.0.0"
+description: Versioned Prompty for hr.policy. The instruction text matches pack/hr.policy@1.0.0.md.
+authors:
+  - people-ops-ai
+model:
+  api: chat
+  configuration:
+    type: azure_openai
+    azure_deployment: gpt-5-mini
+    api_version: "2024-10-21"
+  parameters:
+    temperature: 0
+    max_tokens: 800
+inputs:
+  task:
+    type: string
+---
+system:
+You are the HR policy assistant for employees. Answer only from HR policy passages returned by the
+search tool, and cite their ids. If nothing relevant is returned, say you don't know and route to
+HR. Never give legal advice or discuss another employee's case.
+user:
+{{task}}

@@ -1,6 +1,6 @@
 # Cost estimate: resources, SKUs, billing model
 
-**This page has no dollar figures on purpose.** Prices vary by region, currency, agreement, and month. Use the official pricing pages linked below, or the [Azure pricing calculator](https://azure.microsoft.com/pricing/calculator/), with the SKUs listed here. What this page does give you, for each resource, is the billing dimension and whether you pay while it sits idle.
+**This page has no dollar figures on purpose.** Prices vary by region, currency, agreement, and month. Use the official pricing pages linked below, or the [Azure pricing calculator](https://azure.microsoft.com/pricing/calculator/), with the SKUs listed here. What this page does give you, for each resource, is the billing dimension and whether you pay while it sits idle. A round-number illustration for a quiet month is in the README [Go live](../README.md#go-live) section; recheck it in the calculator before deploying.
 
 Default profile: **`cost-min`** (`costProfile` parameter in `infra/main.bicep`). The `standard` profile shows what changes for a shared dev/test environment.
 

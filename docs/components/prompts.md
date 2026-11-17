@@ -29,7 +29,8 @@ flowchart LR
 |---|---|
 | `src/agentplatform/prompts/registry.py` | `PromptSpec`, `PromptPack`, `load_pack` |
 | `src/agentplatform/prompts/schemas.py` | output schemas |
-| `src/agentplatform/prompts/pack/` | the prompts (no README here: every `.md` is parsed as a prompt) |
+| `src/agentplatform/prompts/pack/` | the prompts the agents load (no README here: every `.md` is parsed as a prompt) |
+| `src/agentplatform/prompts/prompty/` | Prompty mirror, including critic `1.0.0` and canary `1.1.0` |
 
 ## 5. Code excerpts
 

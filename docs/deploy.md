@@ -44,9 +44,9 @@ curl -X POST "$APIM_GATEWAY_URL/agents/loans/L-1001/underwrite" -H "Ocp-Apim-Sub
 * **Global:** in APIM, set the named value `agents-enabled` to `false`. Every call then returns 503.
 * **Per agent:** `POST /directory/{agent}/kill` on the BFF (requires the `platform-admins` group). In this sample the directory state is per replica. Production would back it with Cosmos or App Configuration.
 
-## CI/CD with GitHub Actions and OIDC (disabled by default)
+## CI/CD with GitHub Actions and OIDC (manual)
 
-The pipeline lives in [`deployment.md`](deployment.md): pull-request checks for the Terraform stack, a `deploy.yml` workflow that goes dev -> prod through GitHub Environments with required reviewers, a `deploy_tool` input (`bicep` or `terraform`), OIDC login with federated credentials (no secrets), smoke tests and a manual `teardown.yml`. Every deploy job is gated behind the repository variable `DEPLOY_ENABLED`, which is not set, so nothing runs against Azure. `azd up` below remains the laptop path.
+The pipeline lives in [`deployment.md`](deployment.md): pull-request checks for the Terraform stack, a `deploy.yml` workflow that goes dev -> prod through GitHub Environments with required reviewers, a `deploy_tool` input (`bicep` or `terraform`), OIDC login with federated credentials (no secrets), smoke tests and a manual `teardown.yml`. The workflow runs only when someone starts it and types `deploy`. It does not run on push. `azd up` remains the laptop path. The exact sequence, the illustrative bill, and the empty live URL are in the README [Go live](../README.md#go-live) section.
 
 ## Private networking
 

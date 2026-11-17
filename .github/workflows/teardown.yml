@@ -1,6 +1,6 @@
-# Manual teardown of one environment. Gated by DEPLOY_ENABLED == 'true' like deploy.yml, runs in
-# the matching GitHub Environment (so prod teardown also needs reviewer approval), and requires
-# typing the environment name to confirm.
+# Manual teardown of one environment. Runs in the matching GitHub Environment (so prod
+# teardown needs reviewer approval) and requires typing the environment name to confirm.
+# Azure login is OIDC only. See docs/deployment.md.
 name: teardown
 on:
   workflow_dispatch:
@@ -23,7 +23,7 @@ permissions:
   contents: read
 jobs:
   teardown:
-    if: vars.DEPLOY_ENABLED == 'true' && inputs.confirm == inputs.environment
+    if: inputs.confirm == inputs.environment
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     permissions:

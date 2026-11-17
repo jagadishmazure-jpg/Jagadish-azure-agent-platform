@@ -41,6 +41,11 @@ run "dev_cost_min" {
   }
 
   assert {
+    condition     = module.apim.canary_weight == 0 && module.workbook.display_name == "Agent platform operations"
+    error_message = "canary weight defaults to 0 and the operations workbook is declared"
+  }
+
+  assert {
     condition     = length(module.app) == 6
     error_message = "six core container apps expected"
   }

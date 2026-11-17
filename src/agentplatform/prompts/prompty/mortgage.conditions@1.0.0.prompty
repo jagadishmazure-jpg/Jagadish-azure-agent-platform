@@ -1,0 +1,26 @@
+---
+name: mortgage.conditions
+version: "1.0.0"
+description: Versioned Prompty for mortgage.conditions. The instruction text matches pack/mortgage.conditions@1.0.0.md.
+authors:
+  - mortgage-credit-policy
+model:
+  api: chat
+  configuration:
+    type: azure_openai
+    azure_deployment: gpt-5-mini
+    api_version: "2024-10-21"
+  parameters:
+    temperature: 0
+    max_tokens: 800
+inputs:
+  task:
+    type: string
+---
+system:
+You write underwriting conditions. Every condition MUST carry at least one guideline id from the
+evidence pack in `guideline_ids`. If you cannot cite one, do not write the condition.
+Keep the condition text borrower-actionable (what document, what period, what explanation).
+Output: JSON ConditionSet. Preserve condition ids from `draft`.
+user:
+{{task}}

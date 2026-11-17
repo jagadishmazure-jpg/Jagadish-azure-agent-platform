@@ -1,0 +1,4 @@
+exceptions
+| where timestamp > ago(24h)
+| summarize errors = count() by type, problemId, bin(timestamp, 15m)
+| order by timestamp desc
