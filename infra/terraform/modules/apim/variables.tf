@@ -79,3 +79,45 @@ variable "rate_limit_calls" {
   type    = number
   default = 60
 }
+
+variable "canary_weight" {
+  description = "Percent of calls sent to the canary prompt and model. 0 keeps every call on stable."
+  type        = number
+  default     = 0
+  validation {
+    condition     = var.canary_weight >= 0 && var.canary_weight <= 100
+    error_message = "canary_weight must be between 0 and 100."
+  }
+}
+
+variable "stable_prompt_ref" {
+  type    = string
+  default = "mortgage.critic@1.0.0"
+}
+
+variable "canary_prompt_ref" {
+  type    = string
+  default = "mortgage.critic@1.1.0"
+}
+
+variable "stable_model" {
+  type    = string
+  default = "gpt-5-mini"
+}
+
+variable "canary_model" {
+  type    = string
+  default = "gpt-5-mini"
+}
+
+variable "canary_backend_url" {
+  description = "Empty uses the same backend URL as the stable BFF."
+  type        = string
+  default     = ""
+}
+
+variable "gateway_token" {
+  description = "Token APIM sends and the BFF requires before trusting identity headers. Empty skips it."
+  type        = string
+  default     = ""
+}

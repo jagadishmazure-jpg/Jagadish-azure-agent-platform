@@ -4,6 +4,25 @@
 locals {
   sku_name = var.sku == "Consumption" ? "Consumption_0" : "${var.sku}_1"
 
+  # Weight 0 (the default) makes the when-branch unreachable, so traffic stays on the stable headers.
+  canary_policy = <<-XML
+    <choose>
+      <when condition="@(new Random().Next(100) &lt; int(&quot;{{canary-weight}}&quot;))">
+        <set-header name="x-prompt-ref" exists-action="override"><value>{{prompt-canary}}</value></set-header>
+        <set-header name="x-model-deployment" exists-action="override"><value>{{model-canary}}</value></set-header>
+        <set-backend-service base-url="{{canary-backend-url}}" />
+      </when>
+      <otherwise>
+        <set-header name="x-prompt-ref" exists-action="override"><value>{{prompt-stable}}</value></set-header>
+        <set-header name="x-model-deployment" exists-action="override"><value>{{model-stable}}</value></set-header>
+      </otherwise>
+    </choose>
+  XML
+
+  gateway_header = <<-XML
+    <set-header name="x-gateway-token" exists-action="override"><value>{{bff-gateway-token}}</value></set-header>
+  XML
+
   jwt_policy = var.entra_tenant_id == "" ? "" : <<-XML
     <set-header name="x-user" exists-action="delete" />
     <set-header name="x-groups" exists-action="delete" />
@@ -37,6 +56,63 @@ resource "azurerm_api_management_named_value" "kill_switch" {
   api_management_name = azurerm_api_management.this.name
   display_name        = "agents-enabled"
   value               = "true"
+}
+
+resource "azurerm_api_management_named_value" "canary_weight" {
+  name                = "canary-weight"
+  resource_group_name = var.resource_group_name
+  api_management_name = azurerm_api_management.this.name
+  display_name        = "canary-weight"
+  value               = tostring(var.canary_weight)
+}
+
+resource "azurerm_api_management_named_value" "prompt_stable" {
+  name                = "prompt-stable"
+  resource_group_name = var.resource_group_name
+  api_management_name = azurerm_api_management.this.name
+  display_name        = "prompt-stable"
+  value               = var.stable_prompt_ref
+}
+
+resource "azurerm_api_management_named_value" "prompt_canary" {
+  name                = "prompt-canary"
+  resource_group_name = var.resource_group_name
+  api_management_name = azurerm_api_management.this.name
+  display_name        = "prompt-canary"
+  value               = var.canary_prompt_ref
+}
+
+resource "azurerm_api_management_named_value" "model_stable" {
+  name                = "model-stable"
+  resource_group_name = var.resource_group_name
+  api_management_name = azurerm_api_management.this.name
+  display_name        = "model-stable"
+  value               = var.stable_model
+}
+
+resource "azurerm_api_management_named_value" "model_canary" {
+  name                = "model-canary"
+  resource_group_name = var.resource_group_name
+  api_management_name = azurerm_api_management.this.name
+  display_name        = "model-canary"
+  value               = var.canary_model
+}
+
+resource "azurerm_api_management_named_value" "gateway_token" {
+  name                = "bff-gateway-token"
+  resource_group_name = var.resource_group_name
+  api_management_name = azurerm_api_management.this.name
+  display_name        = "bff-gateway-token"
+  secret              = true
+  value               = var.gateway_token
+}
+
+resource "azurerm_api_management_named_value" "canary_backend" {
+  name                = "canary-backend-url"
+  resource_group_name = var.resource_group_name
+  api_management_name = azurerm_api_management.this.name
+  display_name        = "canary-backend-url"
+  value               = var.canary_backend_url != "" ? var.canary_backend_url : var.backend_url
 }
 
 resource "azurerm_api_management_api" "this" {
@@ -87,6 +163,8 @@ resource "azurerm_api_management_api_policy" "this" {
         </choose>
         ${local.jwt_policy}
         <rate-limit calls="${var.rate_limit_calls}" renewal-period="60" />
+        ${local.canary_policy}
+        ${local.gateway_header}
         <set-header name="traceparent" exists-action="skip">
           <value>@($"00-{Guid.NewGuid().ToString("N")}-{Guid.NewGuid().ToString("N").Substring(0,16)}-01")</value>
         </set-header>
@@ -97,5 +175,14 @@ resource "azurerm_api_management_api_policy" "this" {
     </policies>
   XML
 
-  depends_on = [azurerm_api_management_named_value.kill_switch]
+  depends_on = [
+    azurerm_api_management_named_value.kill_switch,
+    azurerm_api_management_named_value.canary_weight,
+    azurerm_api_management_named_value.prompt_stable,
+    azurerm_api_management_named_value.prompt_canary,
+    azurerm_api_management_named_value.model_stable,
+    azurerm_api_management_named_value.model_canary,
+    azurerm_api_management_named_value.canary_backend,
+    azurerm_api_management_named_value.gateway_token,
+  ]
 }

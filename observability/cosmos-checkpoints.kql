@@ -1,0 +1,5 @@
+dependencies
+| where timestamp > ago(24h)
+| where target contains "documents.azure.com" or name contains "cosmos"
+| summarize calls = count(), failed = countif(success == false), p95_ms = percentile(duration, 95) by name, bin(timestamp, 15m)
+| order by timestamp desc

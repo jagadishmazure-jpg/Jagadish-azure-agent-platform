@@ -163,7 +163,7 @@ The report is a JSON artifact in CI (`evals-out`).
 ## 15. Limitations
 
 - Three loans and a few HR questions; small sets.
-- The `--azure` path has not been run.
+- The `--azure` and `--live` paths have not been run against Azure OpenAI. `--live` skips cleanly when the endpoint is unset.
 
 ## 16. Interview talking points
 

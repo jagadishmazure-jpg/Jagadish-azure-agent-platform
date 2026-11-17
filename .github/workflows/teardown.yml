@@ -1,6 +1,6 @@
-# Manual teardown of one environment. Gated by DEPLOY_ENABLED == 'true' like deploy.yml, runs in
-# the matching GitHub Environment (so prod teardown also needs reviewer approval), and requires
-# typing the environment name to confirm.
+# Manual teardown of one environment. Runs in the matching GitHub Environment (so prod
+# teardown needs reviewer approval) and requires typing the environment name to confirm.
+# Azure login is OIDC only. See docs/deployment.md.
 name: teardown
 on:
   workflow_dispatch:
@@ -21,9 +21,22 @@ on:
         required: true
 permissions:
   contents: read
+concurrency:
+  group: aap-azure
+  cancel-in-progress: false
 jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Only main may destroy an environment
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::Teardown runs only from the main branch."
+            exit 1
+          fi
   teardown:
-    if: vars.DEPLOY_ENABLED == 'true' && inputs.confirm == inputs.environment
+    needs: guard
+    if: inputs.confirm == inputs.environment && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     permissions:

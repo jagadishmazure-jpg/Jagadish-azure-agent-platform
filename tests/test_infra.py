@@ -48,6 +48,68 @@ def test_bicep_builds_cleanly():
     assert arm["$schema"].endswith("subscriptionDeploymentTemplate.json#")
 
 
+def test_deploy_workflow_is_manual_with_oidc():
+    deploy = (ROOT / ".github/workflows/deploy.yml").read_text()
+    teardown = (ROOT / ".github/workflows/teardown.yml").read_text()
+    assert "workflow_dispatch:" in deploy
+    assert "\n  push:" not in deploy
+    assert "DEPLOY_ENABLED" not in deploy
+    assert "id-token: write" in deploy
+    assert "azure/login@" in deploy
+    assert "environment: dev" in deploy and "environment: prod" in deploy
+    assert "confirm" in deploy
+    assert "DEPLOY_ENABLED" not in teardown
+    assert "id-token: write" in teardown
+
+
+def test_canary_and_workbook_are_in_both_tools():
+    names = [
+        "requests.kql",
+        "dependencies.kql",
+        "exceptions.kql",
+        "cosmos-checkpoints.kql",
+        "canary.kql",
+    ]
+    bicep = (ROOT / "infra/modules/workbook.bicep").read_text()
+    terraform = (ROOT / "infra/terraform/modules/workbook/main.tf").read_text()
+    for name in names:
+        query = (ROOT / "observability" / name).read_text().strip()
+        assert len(query) > 40
+        assert name in bicep and name in terraform
+        assert "AccountKey" not in query
+    apim_b = (ROOT / "infra/modules/apim.bicep").read_text()
+    apim_t = (ROOT / "infra/terraform/modules/apim/main.tf").read_text()
+    variables = (ROOT / "infra/terraform/modules/apim/variables.tf").read_text()
+    assert "param canaryWeight int = 0" in apim_b
+    for token in ("canary-weight", "prompt-stable", "prompt-canary", "model-stable", "model-canary"):
+        assert token in apim_b and token in apim_t
+    assert re.search(r'variable "canary_weight" \{.*?default\s+=\s+0', variables, re.S)
+
+
+def test_azd_project_config():
+    doc = yaml.safe_load((ROOT / "azure.yaml").read_text())
+    assert doc["name"] == "azure-agent-platform"
+    assert doc["infra"]["provider"] == "bicep"
+    assert doc["infra"]["path"] == "infra"
+    assert doc["infra"]["module"] == "main"
+    assert (ROOT / doc["infra"]["path"] / "main.bicep").exists()
+    assert "postprovision" in doc["hooks"]
+    for service in doc["services"].values():
+        assert service["host"] == "containerapp"
+        assert service["docker"]["remoteBuild"] is True
+        assert (ROOT / service["docker"]["path"]).exists()
+    azd = shutil.which("azd")
+    if not azd:
+        pytest.skip("azd CLI not installed")
+    # `azd show` parses azure.yaml and lists services. It does not need a subscription or an env.
+    env = {**os.environ, "AZURE_DEV_COLLECT_TELEMETRY": "no"}
+    show = subprocess.run([azd, "show"], capture_output=True, text=True, cwd=ROOT, env=env)
+    assert show.returncode == 0, show.stderr
+    assert "azure-agent-platform" in show.stdout
+    for service in doc["services"]:
+        assert service in show.stdout
+
+
 def test_bicep_matches_terraform_for_nsgs():
     net_b = (ROOT / "infra/modules/network.bicep").read_text()
     net_t = (ROOT / "infra/terraform/modules/network/main.tf").read_text()

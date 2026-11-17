@@ -87,7 +87,13 @@ def get_chat_client(settings: Settings | None = None, *, fallback: bool = False)
         return MockChatClient()
     from agent_framework_foundry import FoundryChatClient
 
-    model = s.foundry_fallback_model if (fallback and s.foundry_fallback_model) else s.foundry_model
+    from agentplatform.llmops.selection import REQUEST_MODEL
+
+    selected = REQUEST_MODEL.get().strip()
+    if selected and not fallback:
+        model = selected
+    else:
+        model = s.foundry_fallback_model if (fallback and s.foundry_fallback_model) else s.foundry_model
     return FoundryChatClient(
         project_endpoint=s.foundry_project_endpoint,
         model=model,

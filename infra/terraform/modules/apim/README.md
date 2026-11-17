@@ -1,6 +1,6 @@
 # `modules/apim`
 
-API Management in front of the services: optional Entra ID JWT validation, spoofable-header stripping, rate limit, traceparent injection (and, in the agent platform, a kill-switch named value).
+API Management in front of the services: optional Entra ID JWT validation, spoofable-header stripping, rate limit, traceparent injection, a kill-switch named value, and weighted routing between a stable prompt/model and a canary. `canary_weight` defaults to 0, so a fresh deploy sends every call to the stable version.
 
 | File | What it does |
 |---|---|

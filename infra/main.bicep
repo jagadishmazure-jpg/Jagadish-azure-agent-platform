@@ -258,7 +258,9 @@ var commonEnv = [
   { name: 'MCP_CREDIT_BUREAU_URL', value: 'http://ca-mcp-credit-bureau/mcp' }
   { name: 'MCP_LOS_URL', value: 'http://ca-mcp-los/mcp' }
 ]
+var gatewayToken = uniqueString(rg.id, 'bff-gateway-token')
 var orchestratorEnv = concat(commonEnv, [
+  { name: 'AAP_GATEWAY_TOKEN', value: gatewayToken }
   { name: 'AZURE_CLIENT_ID', value: identity.outputs.orchestratorClientId }
   { name: 'FOUNDRY_PROJECT_ENDPOINT', value: foundry.outputs.projectEndpoint }
   { name: 'FOUNDRY_MODEL', value: foundry.outputs.chatDeploymentName }
@@ -319,6 +321,17 @@ module apim 'modules/apim.bicep' = {
     bffUrl: containerApps[0].outputs.url
     entraTenantId: entraTenantId
     entraAudience: entraAudience
+    gatewayToken: gatewayToken
+  }
+}
+
+module workbook 'modules/workbook.bicep' = {
+  scope: rg
+  name: 'workbook'
+  params: {
+    location: location
+    tags: tags
+    appInsightsId: monitoring.outputs.appInsightsId
   }
 }
 
@@ -386,3 +399,4 @@ output AZURE_KEY_VAULT_URI string = keyVault.outputs.uri
 output APIM_GATEWAY_URL string = apim.outputs.gatewayUrl
 output BFF_URL string = containerApps[0].outputs.url
 output EVAL_MODEL_DEPLOYMENT string = foundry.outputs.chatDeploymentName
+output WORKBOOK_NAME string = workbook.outputs.name

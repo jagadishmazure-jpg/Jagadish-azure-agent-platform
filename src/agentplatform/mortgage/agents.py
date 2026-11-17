@@ -12,7 +12,45 @@ from agent_framework import Agent, BaseChatClient
 
 from agentplatform.harness.tracing import span
 from agentplatform.llm.clients import get_chat_client
+from agentplatform.llmops.selection import REQUEST_MODEL, REQUEST_PROMPT_REF
 from agentplatform.prompts import load_pack
+from agentplatform.prompts.registry import PromptSpec
+
+
+def _system_text(body: str) -> str:
+    lines = body.splitlines()
+    if lines and lines[0].strip() == "system:":
+        lines = lines[1:]
+    user_at = next((i for i, line in enumerate(lines) if line.strip() == "user:"), None)
+    if user_at is not None:
+        lines = lines[:user_at]
+    return "\n".join(lines).strip()
+
+
+def resolve_prompt(role: str) -> PromptSpec:
+    """Markdown pack by default. ``x-prompt-ref`` selects another version, including a Prompty canary."""
+    prompt_id = ROLES[role]
+    selected = REQUEST_PROMPT_REF.get().strip()
+    pack = load_pack()
+    if selected.startswith(f"{prompt_id}@"):
+        version = selected.split("@", 1)[1]
+        try:
+            return pack.get(prompt_id, version)
+        except KeyError:
+            from agentplatform.prompts.prompty import load_prompty_pack
+
+            prom = load_prompty_pack().get(prompt_id, version)
+            base = pack.get(prompt_id)
+            return PromptSpec(
+                base.id,
+                prom.version,
+                base.owner,
+                base.risk_tier,
+                base.output_schema,
+                _system_text(prom.body),
+            )
+    return pack.get(prompt_id)
+
 
 ROLES = {
     "intake": "mortgage.intake",
@@ -34,10 +72,9 @@ class AgentSuite:
     degraded: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
-        pack = load_pack()
         self.client = self.client or get_chat_client()
-        for role, pid in ROLES.items():
-            spec = pack.get(pid)
+        for role in ROLES:
+            spec = resolve_prompt(role)
             self.prompt_refs[role] = spec.ref
             self.agents[role] = Agent(
                 client=self.client,
@@ -49,13 +86,20 @@ class AgentSuite:
     async def structured(
         self, role: str, *, facts: dict[str, Any], draft: dict[str, Any], evidence: str = ""
     ) -> dict:
-        spec = load_pack().get(ROLES[role])
+        spec = resolve_prompt(role)
+        self.prompt_refs[role] = spec.ref
         schema = spec.schema()
         message = (
             f"{evidence}\n\nUse only the facts and evidence above. Return JSON for schema {spec.output_schema}.\n"
             f"```json\n{json.dumps({'facts': facts, 'draft': draft}, default=str)}\n```"
         )
-        with span("agent.run", agent=f"{role}-agent", prompt=spec.ref):
+        with span(
+            "agent.run",
+            agent=f"{role}-agent",
+            prompt=spec.ref,
+            prompt_ref=spec.ref,
+            model_deployment=REQUEST_MODEL.get(),
+        ):
             for client in (None, self.fallback):
                 try:
                     agent = (

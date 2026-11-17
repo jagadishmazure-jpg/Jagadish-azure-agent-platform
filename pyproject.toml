@@ -30,6 +30,8 @@ dependencies = [
 
 [project.optional-dependencies]
 eval = ["azure-ai-evaluation==1.18.7"]
+llmops = ["mlflow>=2.19,<3"]
+live = ["langsmith>=0.3,<0.5"]
 dev = ["azure-ai-evaluation==1.18.7", "pyyaml>=6", "pytest==9.1.1", "pytest-asyncio==1.4.0", "ruff==0.16.9"]
 
 [build-system]

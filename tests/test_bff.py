@@ -53,6 +53,28 @@ def test_directory_and_admin_kill_switch(client):
     assert client.post("/directory/nope/kill", headers=admin).status_code == 404
 
 
+def test_azure_mode_rejects_forged_groups(monkeypatch):
+    from agentplatform.config import get_settings
+
+    monkeypatch.setenv("AAP_MODE", "azure")
+    monkeypatch.setenv("AAP_GATEWAY_TOKEN", "gateway-token")
+    get_settings.cache_clear()
+    try:
+        with TestClient(app) as client:
+            forged = client.post(
+                "/loans/L-1001/underwrite",
+                headers={"x-user": "attacker", "x-groups": "loan-officers,underwriting"},
+            )
+            assert forged.status_code == 403
+            admin = {**UW, "x-groups": "platform-admins", "x-gateway-token": "gateway-token"}
+            assert client.post("/directory/crm-agent/kill", headers=admin).status_code == 200
+            client.post("/directory/crm-agent/revive", headers=admin)
+    finally:
+        monkeypatch.delenv("AAP_MODE", raising=False)
+        monkeypatch.delenv("AAP_GATEWAY_TOKEN", raising=False)
+        get_settings.cache_clear()
+
+
 def test_chat_endpoints_and_inbound_safety(client):
     hr = client.post(
         "/chat/hr", json={"message": "How many weeks of parental leave?", "as_of": "2026-03-01"}

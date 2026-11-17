@@ -33,6 +33,7 @@ class Settings:
     servicebus_namespace: str = ""
     managed_identity_client_id: str = ""
     appinsights_connection_string: str = ""
+    gateway_token: str = ""
     checkpoint_dir: str = ".checkpoints"
     extra: dict[str, str] = field(default_factory=dict)
 
@@ -60,6 +61,7 @@ class Settings:
             servicebus_namespace=_env("AZURE_SERVICEBUS_NAMESPACE"),
             managed_identity_client_id=_env("AZURE_CLIENT_ID"),
             appinsights_connection_string=_env("APPLICATIONINSIGHTS_CONNECTION_STRING"),
+            gateway_token=_env("AAP_GATEWAY_TOKEN"),
             checkpoint_dir=_env("AAP_CHECKPOINT_DIR", ".checkpoints"),
         )
 

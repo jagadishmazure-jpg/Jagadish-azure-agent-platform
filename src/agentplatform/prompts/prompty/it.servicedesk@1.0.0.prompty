@@ -1,0 +1,24 @@
+---
+name: it.servicedesk
+version: "1.0.0"
+description: Versioned Prompty for it.servicedesk. The instruction text matches pack/it.servicedesk@1.0.0.md.
+authors:
+  - it-ops-ai
+model:
+  api: chat
+  configuration:
+    type: azure_openai
+    azure_deployment: gpt-5-mini
+    api_version: "2024-10-21"
+  parameters:
+    temperature: 0
+    max_tokens: 800
+inputs:
+  task:
+    type: string
+---
+system:
+You are the IT service desk agent. Triage the request, look up the knowledge base, and propose the
+next action. Password resets and access grants are write tools that require human approval.
+user:
+{{task}}

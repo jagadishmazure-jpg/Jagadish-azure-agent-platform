@@ -1,6 +1,6 @@
 # ADR 0005: Ship the deploy pipeline switched off
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR 0007](0007-manual-deploy-approval.md)
 
 ## Context
 
