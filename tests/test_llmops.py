@@ -126,6 +126,24 @@ def test_canary_rolls_back_on_regression_and_holds_otherwise():
     assert "fail closed" in missing["reasons"][0]
 
 
+def test_live_report_metrics_are_read_from_the_mock_block(tmp_path):
+    spec = importlib.util.spec_from_file_location("canary_metrics", ROOT / "scripts" / "canary_rollback.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    path = tmp_path / "live-report.json"
+    path.write_text(
+        json.dumps(
+            {
+                "mock": {"metrics": {"policy_compliance": 1.0, "condition_recall": 1.0}},
+                "live": {"metrics": {"groundedness": 0.2}},
+            }
+        )
+    )
+    loaded = mod._load_metrics(str(path))
+    assert loaded["policy_compliance"] == 1.0
+    assert "groundedness" not in loaded
+
+
 def test_canary_script_simulates_rollback_without_calling_azure(tmp_path, monkeypatch, capsys):
     spec = importlib.util.spec_from_file_location("canary_rollback", ROOT / "scripts" / "canary_rollback.py")
     mod = importlib.util.module_from_spec(spec)
@@ -150,7 +168,7 @@ def test_canary_script_simulates_rollback_without_calling_azure(tmp_path, monkey
     assert mod.main(["--example", "hold", "--apply", "--track-dir", str(tmp_path)]) == 0
     ready = json.loads(capsys.readouterr().out)
     assert ready["applied"] is False
-    assert "00000000-0000-0000-0000-000000000002" in ready["command"][ready["command"].index("--url") + 1]
+    assert ready["command"] is None
     assert "subprocess" not in mod.__dict__
 
 
@@ -161,7 +179,7 @@ def test_synthetic_load_dry_run_and_injected_client(capsys):
     assert mod.main(["--base-url", "http://127.0.0.1:9", "--rounds", "2"]) == 0
     report = json.loads(capsys.readouterr().out)
     assert report["dry_run"] is True
-    assert report["requests"] == 14
+    assert report["requests"] == 11
     assert all(item["url"].startswith("http://127.0.0.1:9") for item in report["plan"])
 
     class Response:
@@ -176,3 +194,9 @@ def test_synthetic_load_dry_run_and_injected_client(capsys):
     summary = mod.summarize(results)
     assert summary["requests"] == len(mod.SCENARIOS)
     assert summary["statuses"] == {"202": len(mod.SCENARIOS)}
+    # Two rounds underwrite each loan once, and an APIM prefix drops /healthz.
+    plan = mod.build_plan("https://gw.example", 2, "agents")
+    assert all(item["path"].startswith("/agents/") for item in plan)
+    assert not any(item["path"].endswith("/healthz") for item in plan)
+    underwrites = [item for item in plan if "/loans/" in item["path"]]
+    assert len(underwrites) == 3 and {item["round"] for item in underwrites} == {0}

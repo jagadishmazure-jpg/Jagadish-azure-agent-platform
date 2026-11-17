@@ -9,6 +9,7 @@ locals {
     search_index_data_contrib  = "8ebe5a00-799e-43f5-93ac-243d3dce84a7"
     search_service_contributor = "7ca78c08-252a-4471-8644-bb5ff32d4ba0"
     service_bus_sender         = "69a216fc-b8fb-44d8-bc22-1f3c2cd27a39"
+    acr_push                   = "8311e382-0749-4cb8-b61a-304f252e45ec"
   }
 
   orch = module.identity.principal_ids["orchestrator"]
@@ -32,6 +33,7 @@ locals {
     deployer-search-data = { scope = module.search.id, role = "search_index_data_contrib", principal = var.principal_id }
     deployer-foundry     = { scope = module.foundry.account_id, role = "foundry_user", principal = var.principal_id }
     deployer-openai      = { scope = module.foundry.account_id, role = "openai_user", principal = var.principal_id }
+    deployer-acr-push    = { scope = module.registry.id, role = "acr_push", principal = var.principal_id }
   }
 }
 

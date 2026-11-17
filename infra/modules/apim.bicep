@@ -23,6 +23,8 @@ param stableModel string = 'gpt-5-mini'
 param canaryModel string = 'gpt-5-mini'
 @description('Empty uses the same BFF URL as the stable backend.')
 param canaryBackendUrl string = ''
+@description('Shared token the BFF requires before it trusts identity headers. Empty skips the header.')
+param gatewayToken string = ''
 
 resource apim 'Microsoft.ApiManagement/service@2024-05-01' = {
   name: 'apim-${resourceToken}'
@@ -80,6 +82,14 @@ resource canaryBackend 'Microsoft.ApiManagement/service/namedValues@2024-05-01' 
   properties: { displayName: 'canary-backend-url', value: resolvedCanaryBackend, secret: false }
 }
 
+resource gatewayTokenNv 'Microsoft.ApiManagement/service/namedValues@2024-05-01' = if (!empty(gatewayToken)) {
+  parent: apim
+  name: 'bff-gateway-token'
+  properties: { displayName: 'bff-gateway-token', value: gatewayToken, secret: true }
+}
+
+var gatewayHeader = empty(gatewayToken) ? '' : '<set-header name="x-gateway-token" exists-action="override"><value>{{bff-gateway-token}}</value></set-header>'
+
 // Weight 0 (the default) makes the when-branch unreachable, so traffic stays on the stable headers.
 var canaryRouting = '<choose><when condition="@(new Random().Next(100) &lt; int(&quot;{{canary-weight}}&quot;))"><set-header name="x-prompt-ref" exists-action="override"><value>{{prompt-canary}}</value></set-header><set-header name="x-model-deployment" exists-action="override"><value>{{model-canary}}</value></set-header><set-backend-service base-url="{{canary-backend-url}}" /></when><otherwise><set-header name="x-prompt-ref" exists-action="override"><value>{{prompt-stable}}</value></set-header><set-header name="x-model-deployment" exists-action="override"><value>{{model-stable}}</value></set-header></otherwise></choose>'
 
@@ -121,9 +131,9 @@ resource policy 'Microsoft.ApiManagement/service/apis/policies@2024-05-01' = {
   name: 'policy'
   properties: {
     format: 'rawxml'
-    value: '<policies><inbound><base /><choose><when condition="@(&quot;{{agents-enabled}}&quot; != &quot;true&quot;)"><return-response><set-status code="503" reason="Agents disabled by kill switch" /></return-response></when></choose>${empty(entraTenantId) ? '' : stripSpoofable}${jwtPolicy}<rate-limit calls="60" renewal-period="60" />${canaryRouting}<set-header name="traceparent" exists-action="skip"><value>@($"00-{Guid.NewGuid().ToString("N")}-{Guid.NewGuid().ToString("N").Substring(0,16)}-01")</value></set-header></inbound><backend><base /></backend><outbound><base /></outbound><on-error><base /></on-error></policies>'
+    value: '<policies><inbound><base /><choose><when condition="@(&quot;{{agents-enabled}}&quot; != &quot;true&quot;)"><return-response><set-status code="503" reason="Agents disabled by kill switch" /></return-response></when></choose>${empty(entraTenantId) ? '' : stripSpoofable}${jwtPolicy}<rate-limit calls="60" renewal-period="60" />${canaryRouting}${gatewayHeader}<set-header name="traceparent" exists-action="skip"><value>@($"00-{Guid.NewGuid().ToString("N")}-{Guid.NewGuid().ToString("N").Substring(0,16)}-01")</value></set-header></inbound><backend><base /></backend><outbound><base /></outbound><on-error><base /></on-error></policies>'
   }
-  dependsOn: [killSwitch, canaryWeightNv, promptStable, promptCanary, modelStable, modelCanary, canaryBackend]
+  dependsOn: [killSwitch, canaryWeightNv, promptStable, promptCanary, modelStable, modelCanary, canaryBackend, gatewayTokenNv]
 }
 
 output name string = apim.name

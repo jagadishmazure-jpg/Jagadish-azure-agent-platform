@@ -28,19 +28,32 @@ SCENARIOS: list[dict[str, Any]] = [
 ]
 
 
-def build_plan(base_url: str, rounds: int = 1) -> list[dict[str, Any]]:
+def build_plan(base_url: str, rounds: int = 1, api_prefix: str = "") -> list[dict[str, Any]]:
+    """Build the request list.
+
+    Loan underwrites run once. Later rounds repeat only the read and chat calls, so a
+    multi-round pass does not open a second review of the same loan. ``api_prefix`` is
+    ``agents`` when the base URL is the APIM gateway (the API is mounted there, and it has
+    no ``/healthz``).
+    """
     if rounds < 1:
         raise ValueError("rounds must be >= 1")
+    prefix = "/" + api_prefix.strip("/") if api_prefix.strip("/") else ""
     root = base_url.rstrip("/")
     plan = []
     for index in range(rounds):
         for scenario in SCENARIOS:
+            if prefix and scenario["path"] == "/healthz":
+                continue
+            if index > 0 and scenario["path"].startswith("/loans/"):
+                continue
+            path = prefix + scenario["path"]
             plan.append(
                 {
                     "round": index,
                     "method": scenario["method"],
-                    "path": scenario["path"],
-                    "url": root + scenario["path"],
+                    "path": path,
+                    "url": root + path,
                     "json": scenario["json"],
                 }
             )
@@ -89,11 +102,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--base-url", default=os.environ.get("BFF_URL", "http://127.0.0.1:8080"))
     parser.add_argument("--rounds", type=int, default=1)
     parser.add_argument(
+        "--api-prefix",
+        default="",
+        help="Path prefix. Use 'agents' when --base-url is the APIM gateway URL.",
+    )
+    parser.add_argument(
         "--execute", action="store_true", help="Send the requests. Without this flag, nothing is called."
     )
     parser.add_argument("--out", default="", help="Write the JSON report here as well as stdout")
     args = parser.parse_args(argv)
-    plan = build_plan(args.base_url, args.rounds)
+    plan = build_plan(args.base_url, args.rounds, args.api_prefix)
     key = os.environ.get("APIM_SUBSCRIPTION_KEY", "").strip()
     headers = {"Ocp-Apim-Subscription-Key": key} if key else {}
     if not args.execute:

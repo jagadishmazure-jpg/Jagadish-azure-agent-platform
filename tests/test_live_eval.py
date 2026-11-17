@@ -117,6 +117,67 @@ def test_live_report_uses_injected_sdk_and_langsmith():
     assert "Do not subtract" in report["comparison"]["note"]
 
 
+def test_evaluate_with_sdk_uses_the_evaluation_sdk(monkeypatch):
+    import azure.ai.evaluation as evaluation
+
+    from agentplatform.evals.live import evaluate_with_sdk
+
+    calls = {}
+
+    class Evaluator:
+        def __init__(self, model_config, credential=None):
+            calls["model"] = model_config
+            calls["credential"] = credential
+
+    def evaluate(**kwargs):
+        calls["kwargs"] = kwargs
+        return {
+            "metrics": {"groundedness.groundedness": 0.4, "relevance.relevance": 0.6},
+            "rows": [],
+            "studio_url": "https://example.invalid/studio",
+        }
+
+    monkeypatch.setattr(evaluation, "GroundednessEvaluator", Evaluator)
+    monkeypatch.setattr(evaluation, "RelevanceEvaluator", Evaluator)
+    monkeypatch.setattr(evaluation, "evaluate", evaluate)
+    monkeypatch.setattr("agentplatform.config.azure_credential", lambda settings=None: "cred")
+    result = evaluate_with_sdk(
+        [{"id": "hl-001", "query": "q", "response": "r", "context": "c"}],
+        {"AZURE_OPENAI_ENDPOINT": "https://example.openai.azure.com/", "EVAL_MODEL_DEPLOYMENT": "gpt-5-mini"},
+    )
+    assert calls["model"]["azure_deployment"] == "gpt-5-mini"
+    assert calls["credential"] == "cred"
+    assert set(calls["kwargs"]["evaluators"]) == {"groundedness", "relevance"}
+    assert result["metrics"]["groundedness"] == pytest.approx(0.4)
+    assert result["metrics"]["relevance"] == pytest.approx(0.6)
+
+
+def test_canary_prompt_ref_selects_the_prompty_body():
+    from agentplatform.llmops.selection import REQUEST_PROMPT_REF
+    from agentplatform.mortgage.agents import resolve_prompt
+
+    token = REQUEST_PROMPT_REF.set("mortgage.critic@1.1.0")
+    try:
+        spec = resolve_prompt("critic")
+    finally:
+        REQUEST_PROMPT_REF.reset(token)
+    assert spec.ref == "mortgage.critic@1.1.0"
+    assert "allowed" in spec.body
+    assert resolve_prompt("critic").version == "1.0.0"
+
+
+def test_langsmith_failure_does_not_raise():
+    class Client:
+        def create_run(self, **kwargs):
+            raise RuntimeError("langsmith down")
+
+    from agentplatform.evals.live import log_langsmith
+
+    result = log_langsmith({"cost": {"tasks": 1}}, {"LANGSMITH_API_KEY": "local-test"}, client=Client())
+    assert result["logged"] is False
+    assert "langsmith" in result["reason"]
+
+
 def test_langsmith_skips_without_a_key():
     env = {
         "AZURE_OPENAI_ENDPOINT": "https://example.openai.azure.com/",

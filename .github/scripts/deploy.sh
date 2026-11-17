@@ -12,6 +12,7 @@
 #   deploy.sh import      copy images from SOURCE_ACR (dev) into this environment's ACR (prod)
 #   deploy.sh roll        point every Container App at the new images
 #   deploy.sh smoke       post-deploy checks against the public endpoint
+#   deploy.sh seed        create the Search indexes and register the Foundry agents
 #   deploy.sh destroy     tear the environment down (teardown workflow only)
 set -euo pipefail
 
@@ -22,6 +23,7 @@ STACK="infra/terraform"
 AZD_ENV="aap-${ENV_NAME}"
 IMAGES=(bff a2a mcp)
 OUT="${GITHUB_OUTPUT:-/dev/stdout}"
+ENV_FILE="${AAP_ENV_FILE:-${RUNNER_TEMP:-/tmp}/aap.env}"
 
 log() { echo "::group::$*"; }
 end() { echo "::endgroup::"; }
@@ -48,6 +50,7 @@ provision() {
     rg=$(terraform -chdir="$STACK" output -raw AZURE_RESOURCE_GROUP)
     acr=$(terraform -chdir="$STACK" output -raw AZURE_CONTAINER_REGISTRY_NAME)
     url=$(terraform -chdir="$STACK" output -raw BFF_URL)
+    terraform -chdir="$STACK" output -json | write_env_from_json
     end
   else
     log "bicep: az deployment sub create ($AZD_ENV)"
@@ -60,9 +63,14 @@ provision() {
     rg=$(jq -r .AZURE_RESOURCE_GROUP.value <<<"$outputs")
     acr=$(jq -r .AZURE_CONTAINER_REGISTRY_ENDPOINT.value <<<"$outputs" | cut -d. -f1)
     url=$(jq -r .BFF_URL.value <<<"$outputs")
+    write_env_from_json <<<"$outputs"
     end
   fi
   { echo "resource_group=$rg"; echo "acr_name=$acr"; echo "app_url=$url"; } >>"$OUT"
+}
+
+write_env_from_json() {
+  jq -r 'to_entries[] | select(.value.value != null) | "\(.key)=\(.value.value | @sh)"' >"$ENV_FILE"
 }
 
 push() {
@@ -93,11 +101,40 @@ image_for() { # container app name -> image repository
 
 roll() {
   : "${RESOURCE_GROUP:?}" "${ACR_NAME:?}" "${IMAGE_TAG:?}"
-  for app in $(az containerapp list -g "$RESOURCE_GROUP" --query "[].name" -o tsv); do
+  declare -A previous=()
+  rolled=()
+  restore() {
+    for name in "${rolled[@]}"; do
+      echo "::warning::restoring ${name} to ${previous[$name]}"
+      az containerapp update -g "$RESOURCE_GROUP" -n "$name" --image "${previous[$name]}" --only-show-errors -o none || true
+    done
+  }
+  while IFS= read -r app; do
+    [[ -z "$app" ]] && continue
+    previous["$app"]=$(az containerapp show -g "$RESOURCE_GROUP" -n "$app" --query "properties.template.containers[0].image" -o tsv)
     img="${ACR_NAME}.azurecr.io/$(image_for "$app"):${IMAGE_TAG}"
     echo "rolling $app -> $img"
-    az containerapp update -g "$RESOURCE_GROUP" -n "$app" --image "$img" --only-show-errors -o none
-  done
+    if ! az containerapp update -g "$RESOURCE_GROUP" -n "$app" --image "$img" --only-show-errors -o none; then
+      echo "::error::roll failed on ${app}; restoring apps already moved to ${IMAGE_TAG}"
+      restore
+      exit 1
+    fi
+    rolled+=("$app")
+  done < <(az containerapp list -g "$RESOURCE_GROUP" --query "[].name" -o tsv)
+}
+
+seed() {
+  [[ -f "$ENV_FILE" ]] || { echo "::error::${ENV_FILE} is missing. Run provision in this job first."; exit 1; }
+  set -a
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+  set +a
+  export AAP_MODE=azure
+  python3 -m pip install -q -e ".[eval]"
+  python3 scripts/seed_search_index.py
+  python3 scripts/foundry_register.py --apply
+  python3 scripts/export_agent_cards.py --check
+  echo "seed complete: indexes created, Foundry agents registered."
 }
 
 smoke() {

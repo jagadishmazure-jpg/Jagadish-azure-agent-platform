@@ -26,6 +26,7 @@ var role = {
   serviceBusSender: '69a216fc-b8fb-44d8-bc22-1f3c2cd27a39'
   keyVaultSecretsUser: '4633458b-17de-408a-b874-0445c86b69e6'
   acrPull: '7f951dda-4ed3-4680-a7ca-43fe172d538d'
+  acrPush: '8311e382-0749-4cb8-b61a-304f252e45ec'
 }
 
 resource foundry 'Microsoft.CognitiveServices/accounts@2025-06-01' existing = { name: foundryAccountName }
@@ -124,4 +125,9 @@ resource d4 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(de
   scope: foundry
   name: ra(foundry.id, deployerPrincipalId, role.openAiUser)
   properties: { principalId: deployerPrincipalId, principalType: deployerPrincipalType, roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', role.openAiUser) }
+}
+resource d5 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(deployerPrincipalId)) {
+  scope: acr
+  name: ra(acr.id, deployerPrincipalId, role.acrPush)
+  properties: { principalId: deployerPrincipalId, principalType: deployerPrincipalType, roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', role.acrPush) }
 }

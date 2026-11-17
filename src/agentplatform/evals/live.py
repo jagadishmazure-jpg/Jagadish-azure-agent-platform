@@ -266,13 +266,16 @@ def log_langsmith(summary: dict[str, Any], env: dict[str, str], client: Any = No
             return {"logged": False, "reason": "langsmith is not installed"}
         client = Client(api_key=env["LANGSMITH_API_KEY"].strip())
     project = (env.get("LANGSMITH_PROJECT") or env.get("LANGCHAIN_PROJECT") or "azure-agent-platform").strip()
-    client.create_run(
-        name="aap-live-eval",
-        run_type="chain",
-        inputs={"tasks": summary.get("cost", {}).get("tasks", 0)},
-        outputs={"live": summary.get("live"), "agreement": summary.get("judge_vs_human")},
-        project_name=project,
-    )
+    try:
+        client.create_run(
+            name="aap-live-eval",
+            run_type="chain",
+            inputs={"tasks": summary.get("cost", {}).get("tasks", 0)},
+            outputs={"live": summary.get("live"), "agreement": summary.get("judge_vs_human")},
+            project_name=project,
+        )
+    except Exception as exc:
+        return {"logged": False, "reason": f"langsmith call failed: {exc.__class__.__name__}"}
     return {"logged": True, "project": project}
 
 

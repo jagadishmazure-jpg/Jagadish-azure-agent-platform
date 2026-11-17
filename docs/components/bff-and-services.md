@@ -44,7 +44,13 @@ flowchart LR
 @app.post("/loans/{loan_id}/underwrite")
 async def underwrite(loan_id: str, request: Request, p: Principal = Depends(require("loan-officers"))):
     tp = traceparent(request)
-    with span("bff.underwrite", tenant=p.tenant_id, loan=loan_id):
+    with span(
+        "bff.underwrite",
+        tenant=p.tenant_id,
+        loan=loan_id,
+        prompt_ref=REQUEST_PROMPT_REF.get() or "mortgage.critic@1.0.0",
+        model_deployment=REQUEST_MODEL.get(),
+    ):
         rec = await underwriting_service().start(loan_id, p, tp)
     return {**rec.__dict__, "traceparent": tp}
 ```
@@ -92,6 +98,7 @@ second decision -> 409
 tests/test_bff.py::test_underwrite_then_hitl_decision
 tests/test_bff.py::test_unknown_loan_rejected
 tests/test_bff.py::test_directory_and_admin_kill_switch
+tests/test_bff.py::test_azure_mode_rejects_forged_groups
 tests/test_bff.py::test_chat_endpoints_and_inbound_safety
 ```
 <!-- /output -->

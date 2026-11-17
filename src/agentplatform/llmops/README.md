@@ -6,7 +6,7 @@ call Azure. The script prints the `az rest` update. `--apply` checks the subscri
 
 | File | What it does |
 |---|---|
-| [`__init__.py`](__init__.py) | Exports `log_prompt_run` and `decide_rollback`. |
+| [`__init__.py`](__init__.py) | Package marker. Callers import `tracking`, `canary` or `selection` directly so the mortgage agents can read the canary headers without loading the eval runner. |
 | [`tracking.py`](tracking.py) | Writes an MLflow run when `MLFLOW_TRACKING_URI` is set and `mlflow` imports. Otherwise appends the same fields to a JSONL file. |
 | [`canary.py`](canary.py) | Compares stable and canary metrics to the release floors. A regression, or a missing required metric, sets the next weight to 0. |
 

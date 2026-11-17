@@ -23,6 +23,7 @@ from agentplatform.config import get_settings
 from agentplatform.harness.identity import Principal, child_traceparent, new_traceparent
 from agentplatform.harness.killswitch import KILL_SWITCH
 from agentplatform.harness.tracing import configure_tracing, span
+from agentplatform.llmops.selection import REQUEST_MODEL, REQUEST_PROMPT_REF
 from agentplatform.mortgage.models import UnderwriterDecision
 from agentplatform.safety.content_safety import get_safety_gate
 from agentplatform.single.hr_agent import ask_hr
@@ -42,13 +43,46 @@ app = FastAPI(title="azure-agent-platform BFF", version="0.1.0", lifespan=lifesp
 IT_DESK = ITDesk()
 
 
+@app.middleware("http")
+async def remember_canary_selection(request: Request, call_next):
+    prompt_token = REQUEST_PROMPT_REF.set(request.headers.get("x-prompt-ref", ""))
+    model_token = REQUEST_MODEL.set(request.headers.get("x-model-deployment", ""))
+    try:
+        return await call_next(request)
+    finally:
+        REQUEST_PROMPT_REF.reset(prompt_token)
+        REQUEST_MODEL.reset(model_token)
+
+
 def principal(
-    x_user: str = Header("demo-user"),
+    x_user: str = Header(""),
     x_tenant_id: str | None = Header(None),
-    x_groups: str = Header("employees,underwriting,loan-officers"),
+    x_groups: str = Header(""),
+    x_gateway_token: str = Header(""),
 ) -> Principal:
+    """Offline, missing headers are a demo principal so curl works.
+
+    In Azure the BFF is reachable by APIM Consumption, which cannot sit on the Container Apps
+    network, so the ingress stays public. Privileged groups are accepted only when the caller
+    presents the gateway token APIM injects. A direct caller cannot grant themselves
+    ``underwriting`` by setting ``x-groups``.
+    """
+    settings = get_settings()
+    if settings.azure:
+        if not settings.gateway_token or x_gateway_token != settings.gateway_token:
+            return Principal(
+                "anonymous", x_tenant_id or settings.tenant_id, frozenset(), agent_id="experience-bff"
+            )
+        groups = frozenset(g.strip() for g in x_groups.split(",") if g.strip())
+        return Principal(
+            x_user or "gateway-user", x_tenant_id or settings.tenant_id, groups, agent_id="experience-bff"
+        )
+    if not x_user and not x_groups:
+        x_user, x_groups = "demo-user", "employees,underwriting,loan-officers"
     groups = frozenset(g.strip() for g in x_groups.split(",") if g.strip())
-    return Principal(x_user, x_tenant_id or get_settings().tenant_id, groups, agent_id="experience-bff")
+    return Principal(
+        x_user or "demo-user", x_tenant_id or settings.tenant_id, groups, agent_id="experience-bff"
+    )
 
 
 def traceparent(request: Request) -> str:
@@ -92,7 +126,13 @@ def healthz() -> dict[str, Any]:
 @app.post("/loans/{loan_id}/underwrite")
 async def underwrite(loan_id: str, request: Request, p: Principal = Depends(require("loan-officers"))):
     tp = traceparent(request)
-    with span("bff.underwrite", tenant=p.tenant_id, loan=loan_id):
+    with span(
+        "bff.underwrite",
+        tenant=p.tenant_id,
+        loan=loan_id,
+        prompt_ref=REQUEST_PROMPT_REF.get() or "mortgage.critic@1.0.0",
+        model_deployment=REQUEST_MODEL.get(),
+    ):
         rec = await underwriting_service().start(loan_id, p, tp)
     return {**rec.__dict__, "traceparent": tp}
 

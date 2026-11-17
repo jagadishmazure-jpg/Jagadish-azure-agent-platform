@@ -57,7 +57,7 @@ param apimPublisherEmail string = 'noreply@example.com'
 
 Least-privilege grant for the orchestrator identity (`roles.bicep`):
 
-<!-- code: infra/modules/roles.bicep:41-46 -->
+<!-- code: infra/modules/roles.bicep:42-47 -->
 ```bicep
 // ---- orchestrator (BFF + underwriting agent) ----
 resource o1 'Microsoft.Authorization/roleAssignments@2022-04-01' = {

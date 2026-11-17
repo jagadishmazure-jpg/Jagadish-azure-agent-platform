@@ -115,3 +115,9 @@ variable "canary_backend_url" {
   type        = string
   default     = ""
 }
+
+variable "gateway_token" {
+  description = "Token APIM sends and the BFF requires before trusting identity headers. Empty skips it."
+  type        = string
+  default     = ""
+}

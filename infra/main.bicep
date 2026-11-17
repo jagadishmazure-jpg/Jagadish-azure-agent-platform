@@ -258,7 +258,9 @@ var commonEnv = [
   { name: 'MCP_CREDIT_BUREAU_URL', value: 'http://ca-mcp-credit-bureau/mcp' }
   { name: 'MCP_LOS_URL', value: 'http://ca-mcp-los/mcp' }
 ]
+var gatewayToken = uniqueString(rg.id, 'bff-gateway-token')
 var orchestratorEnv = concat(commonEnv, [
+  { name: 'AAP_GATEWAY_TOKEN', value: gatewayToken }
   { name: 'AZURE_CLIENT_ID', value: identity.outputs.orchestratorClientId }
   { name: 'FOUNDRY_PROJECT_ENDPOINT', value: foundry.outputs.projectEndpoint }
   { name: 'FOUNDRY_MODEL', value: foundry.outputs.chatDeploymentName }
@@ -319,6 +321,7 @@ module apim 'modules/apim.bicep' = {
     bffUrl: containerApps[0].outputs.url
     entraTenantId: entraTenantId
     entraAudience: entraAudience
+    gatewayToken: gatewayToken
   }
 }
 

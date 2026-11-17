@@ -34,12 +34,17 @@ def log_prompt_run(
             written = _file_log(experiment, record_params, metrics, path)
             written["note"] = "MLFLOW_TRACKING_URI is set but mlflow is not installed; wrote a file record"
             return written
-        mlflow.set_tracking_uri(uri)
-        mlflow.set_experiment(experiment)
-        with mlflow.start_run() as run:
-            mlflow.log_params({key: str(value) for key, value in record_params.items()})
-            mlflow.log_metrics({key: float(value) for key, value in metrics.items()})
-            run_id = run.info.run_id
+        try:
+            mlflow.set_tracking_uri(uri)
+            mlflow.set_experiment(experiment)
+            with mlflow.start_run() as run:
+                mlflow.log_params({key: str(value) for key, value in record_params.items()})
+                mlflow.log_metrics({key: float(value) for key, value in metrics.items()})
+                run_id = run.info.run_id
+        except Exception as exc:
+            written = _file_log(experiment, record_params, metrics, path)
+            written["note"] = f"mlflow call failed ({exc.__class__.__name__}); wrote a file record"
+            return written
         return {
             "backend": "mlflow",
             "experiment": experiment,

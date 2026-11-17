@@ -19,6 +19,10 @@ locals {
     </choose>
   XML
 
+  gateway_header = <<-XML
+    <set-header name="x-gateway-token" exists-action="override"><value>{{bff-gateway-token}}</value></set-header>
+  XML
+
   jwt_policy = var.entra_tenant_id == "" ? "" : <<-XML
     <set-header name="x-user" exists-action="delete" />
     <set-header name="x-groups" exists-action="delete" />
@@ -94,6 +98,15 @@ resource "azurerm_api_management_named_value" "model_canary" {
   value               = var.canary_model
 }
 
+resource "azurerm_api_management_named_value" "gateway_token" {
+  name                = "bff-gateway-token"
+  resource_group_name = var.resource_group_name
+  api_management_name = azurerm_api_management.this.name
+  display_name        = "bff-gateway-token"
+  secret              = true
+  value               = var.gateway_token
+}
+
 resource "azurerm_api_management_named_value" "canary_backend" {
   name                = "canary-backend-url"
   resource_group_name = var.resource_group_name
@@ -151,6 +164,7 @@ resource "azurerm_api_management_api_policy" "this" {
         ${local.jwt_policy}
         <rate-limit calls="${var.rate_limit_calls}" renewal-period="60" />
         ${local.canary_policy}
+        ${local.gateway_header}
         <set-header name="traceparent" exists-action="skip">
           <value>@($"00-{Guid.NewGuid().ToString("N")}-{Guid.NewGuid().ToString("N").Substring(0,16)}-01")</value>
         </set-header>
@@ -169,5 +183,6 @@ resource "azurerm_api_management_api_policy" "this" {
     azurerm_api_management_named_value.model_stable,
     azurerm_api_management_named_value.model_canary,
     azurerm_api_management_named_value.canary_backend,
+    azurerm_api_management_named_value.gateway_token,
   ]
 }

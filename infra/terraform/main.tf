@@ -221,7 +221,9 @@ locals {
     MCP_CREDIT_BUREAU_URL                 = "http://ca-mcp-credit-bureau/mcp"
     MCP_LOS_URL                           = "http://ca-mcp-los/mcp"
   }
+  gateway_token = substr(sha256(azurerm_resource_group.this.id), 0, 32)
   orchestrator_env = merge(local.common_env, {
+    AAP_GATEWAY_TOKEN                 = local.gateway_token
     AZURE_CLIENT_ID                   = module.identity.client_ids["orchestrator"]
     FOUNDRY_PROJECT_ENDPOINT          = module.foundry.project_endpoint
     FOUNDRY_MODEL                     = module.foundry.chat_deployment_name
@@ -286,6 +288,7 @@ module "apim" {
   backend_url         = module.app["ca-bff"].url
   entra_tenant_id     = var.entra_tenant_id
   entra_audience      = var.entra_audience
+  gateway_token       = local.gateway_token
   operations = {
     underwrite = { method = "POST", url = "/loans/{loan_id}/underwrite", params = ["loan_id"] }
     get-run    = { method = "GET", url = "/runs/{run_id}", params = ["run_id"] }

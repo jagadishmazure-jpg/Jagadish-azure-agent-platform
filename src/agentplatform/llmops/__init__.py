@@ -1,6 +1,6 @@
-"""LLMOps: Prompty versions, MLflow-shaped run records, and canary rollback decisions."""
+"""LLMOps: prompt runs and the canary decision.
 
-from agentplatform.llmops.canary import decide_rollback
-from agentplatform.llmops.tracking import log_prompt_run
-
-__all__ = ["decide_rollback", "log_prompt_run"]
+Import ``log_prompt_run`` from ``tracking`` and ``decide_rollback`` from ``canary``.
+This module stays empty so the mortgage agents can import ``selection`` without loading
+the eval runner.
+"""

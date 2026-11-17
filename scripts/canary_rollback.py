@@ -37,7 +37,15 @@ REGRESSED = {
 
 def _load_metrics(path: str) -> dict[str, float]:
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    metrics = payload.get("metrics", payload)
+    # Live reports nest the release-gate scores under mock.metrics. A top-level metrics map
+    # is the offline gate report. Live judge names are a different instrument and are not the gate.
+    nested = payload.get("mock")
+    if isinstance(nested, dict) and isinstance(nested.get("metrics"), dict):
+        metrics = nested["metrics"]
+    else:
+        metrics = payload.get("metrics", payload)
+    if not isinstance(metrics, dict):
+        return {}
     return {key: float(value) for key, value in metrics.items() if isinstance(value, (int, float))}
 
 
@@ -111,11 +119,16 @@ def main(argv: list[str] | None = None) -> int:
     subscription = os.environ.get("AZURE_SUBSCRIPTION_ID", "").strip()
     resource_group = os.environ.get("AZURE_RESOURCE_GROUP", "").strip()
     apim_name = os.environ.get("APIM_NAME", "").strip()
-    command = az_rest_command(
-        decision,
-        subscription_id=subscription or "<subscription>",
-        resource_group=resource_group or "<resource-group>",
-        apim_name=apim_name or "<apim>",
+    # A hold must not hand the operator a PUT that would rewrite the weight to the CLI default.
+    command = (
+        az_rest_command(
+            decision,
+            subscription_id=subscription or "<subscription>",
+            resource_group=resource_group or "<resource-group>",
+            apim_name=apim_name or "<apim>",
+        )
+        if decision["rollback"]
+        else None
     )
     applied = False
     if args.apply:
