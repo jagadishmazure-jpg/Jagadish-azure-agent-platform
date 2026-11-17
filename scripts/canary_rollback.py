@@ -41,6 +41,20 @@ def _load_metrics(path: str) -> dict[str, float]:
     return {key: float(value) for key, value in metrics.items() if isinstance(value, (int, float))}
 
 
+def _metric_pair(
+    parser: argparse.ArgumentParser, example: str | None, stable_path: str | None, canary_path: str | None
+) -> tuple[dict[str, float], dict[str, float]]:
+    """Both maps are assigned on every path. ``parser.error`` stops the process; the raise is for analyzers."""
+    if example == "regress":
+        return dict(STABLE), dict(REGRESSED)
+    if example == "hold":
+        return dict(STABLE), dict(STABLE)
+    if stable_path and canary_path:
+        return _load_metrics(stable_path), _load_metrics(canary_path)
+    parser.error("pass --example or both --stable and --canary")
+    raise SystemExit(2)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Decide an APIM canary rollback from two eval reports")
     parser.add_argument("--stable", help="JSON file with stable metrics")
@@ -54,15 +68,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--track-dir", default="", help="Where to append the file-backend experiment record")
     args = parser.parse_args(argv)
 
-    if args.example == "regress":
-        stable, canary = STABLE, REGRESSED
-    elif args.example == "hold":
-        stable, canary = STABLE, dict(STABLE)
-    elif args.stable and args.canary:
-        stable, canary = _load_metrics(args.stable), _load_metrics(args.canary)
-    else:
-        parser.error("pass --example or both --stable and --canary")
-
+    stable, canary = _metric_pair(parser, args.example, args.stable, args.canary)
     decision = decide_rollback(stable, canary, weight=args.weight, max_drop=args.max_drop)
     pack = load_prompty_pack()
     stable_prompt = pack.get("mortgage.critic", "1.0.0")
