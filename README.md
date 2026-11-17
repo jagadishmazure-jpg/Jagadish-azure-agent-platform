@@ -237,7 +237,7 @@ python scripts/canary_rollback.py --example regress   # weight goes to 0
 python scripts/canary_rollback.py --example hold      # weight stays
 ```
 
-On a live environment, pass the two eval JSON files. `--apply` updates the named value only when `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP` and `APIM_NAME` are set. Prompt runs are recorded with MLflow when `MLFLOW_TRACKING_URI` is set and `pip install -e ".[llmops]"` has been run; otherwise the same record is appended under `llmops-out/`.
+On a live environment, pass the two eval JSON files. `--apply` checks `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP` and `APIM_NAME` and prints the `az rest` command. The script does not execute it. Prompt runs are recorded with MLflow when `MLFLOW_TRACKING_URI` is set and `pip install -e ".[llmops]"` has been run; otherwise the same record is appended under `llmops-out/`.
 
 GitHub Actions, instead of a laptop `azd up`:
 

@@ -82,8 +82,9 @@ terraform -chdir=infra/terraform init -backend=false && terraform -chdir=infra/t
 
 ## 8. Real output
 
-<!-- output: ls infra/modules -->
+<!-- output: LC_ALL=C ls infra/modules -->
 ```text
+README.md
 alerts.bicep
 apim.bicep
 cognitive.bicep
@@ -98,7 +99,6 @@ keyvault.bicep
 monitoring.bicep
 network.bicep
 private-endpoint.bicep
-README.md
 registry.bicep
 roles.bicep
 search.bicep

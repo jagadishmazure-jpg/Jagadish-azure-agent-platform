@@ -13,7 +13,11 @@ ENV PYTHONUNBUFFERED=1 PORT=8080 AAP_CHECKPOINT_DIR=/tmp/checkpoints
 RUN useradd --create-home --uid 10001 app
 COPY --from=build /wheels /wheels
 # pip is only needed to install the wheels; it is not shipped in the runtime image.
-RUN pip install --no-cache-dir /wheels/*.whl && rm -rf /wheels && python -m pip uninstall -y pip
+# Upgrade the OS packages the pinned digest still carries when Debian has a fix (Trivy HIGH).
+RUN pip install --no-cache-dir /wheels/*.whl && rm -rf /wheels && python -m pip uninstall -y pip \
+ && apt-get update \
+ && apt-get upgrade -y --no-install-recommends \
+ && rm -rf /var/lib/apt/lists/*
 USER app
 EXPOSE 8080
 CMD ["python", "-m", "agentplatform.mcp_servers"]

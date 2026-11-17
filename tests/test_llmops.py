@@ -144,6 +144,14 @@ def test_canary_script_simulates_rollback_without_calling_azure(tmp_path, monkey
     assert (tmp_path / "experiments.jsonl").exists()
     assert mod.main(["--example", "hold", "--apply", "--track-dir", str(tmp_path)]) == 2
     assert "refusing" in capsys.readouterr().out
+    monkeypatch.setenv("AZURE_SUBSCRIPTION_ID", "00000000-0000-0000-0000-000000000002")
+    monkeypatch.setenv("AZURE_RESOURCE_GROUP", "rg-agentplat-dev-eus2-001")
+    monkeypatch.setenv("APIM_NAME", "apim-dev")
+    assert mod.main(["--example", "hold", "--apply", "--track-dir", str(tmp_path)]) == 0
+    ready = json.loads(capsys.readouterr().out)
+    assert ready["applied"] is False
+    assert "00000000-0000-0000-0000-000000000002" in ready["command"][ready["command"].index("--url") + 1]
+    assert "subprocess" not in mod.__dict__
 
 
 def test_synthetic_load_dry_run_and_injected_client(capsys):

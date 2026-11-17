@@ -1,11 +1,11 @@
-"""Simulate the APIM canary rollback decision. Offline unless ``--apply`` is passed.
+"""Simulate the APIM canary rollback decision. Never calls Azure.
 
 Reads two eval metric JSON objects (the ``metrics`` map from ``run_evals.py``), decides whether
 the canary prompt/model regressed, and prints the ``az rest`` call that would set the
 ``canary-weight`` named value. ``--example regress`` and ``--example hold`` need no files.
 
-``--apply`` calls Azure only when ``AZURE_SUBSCRIPTION_ID``, ``AZURE_RESOURCE_GROUP`` and
-``APIM_NAME`` are set. The default is a dry run.
+``--apply`` checks ``AZURE_SUBSCRIPTION_ID``, ``AZURE_RESOURCE_GROUP`` and ``APIM_NAME`` and
+prints the command for an operator to run. It does not execute that command.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import subprocess
+import re
 import sys
 from pathlib import Path
 
@@ -41,6 +41,25 @@ def _load_metrics(path: str) -> dict[str, float]:
     return {key: float(value) for key, value in metrics.items() if isinstance(value, (int, float))}
 
 
+_SUBSCRIPTION = re.compile(r"^[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$")
+_RESOURCE_GROUP = re.compile(r"^[A-Za-z0-9._()-]{1,90}$")
+_APIM_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9-]{0,49}$")
+
+
+def _apply_problem(subscription: str, resource_group: str, apim_name: str) -> str:
+    if not (subscription and resource_group and apim_name):
+        return "refusing --apply without AZURE_SUBSCRIPTION_ID, AZURE_RESOURCE_GROUP and APIM_NAME"
+    if not (
+        _SUBSCRIPTION.match(subscription)
+        and _RESOURCE_GROUP.match(resource_group)
+        and _APIM_NAME.match(apim_name)
+    ):
+        return (
+            "refusing --apply: subscription, resource group or APIM name does not match the expected pattern"
+        )
+    return ""
+
+
 def _metric_pair(
     parser: argparse.ArgumentParser, example: str | None, stable_path: str | None, canary_path: str | None
 ) -> tuple[dict[str, float], dict[str, float]]:
@@ -63,7 +82,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--weight", type=int, default=10)
     parser.add_argument("--max-drop", type=float, default=0.05)
     parser.add_argument(
-        "--apply", action="store_true", help="Call Azure. Refuses when subscription env is missing."
+        "--apply",
+        action="store_true",
+        help="Require the Azure resource names and print the az rest command. Does not execute it.",
     )
     parser.add_argument("--track-dir", default="", help="Where to append the file-backend experiment record")
     args = parser.parse_args(argv)
@@ -98,20 +119,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     applied = False
     if args.apply:
-        if not (subscription and resource_group and apim_name):
-            print(
-                json.dumps(
-                    {
-                        "applied": False,
-                        "error": "refusing --apply without AZURE_SUBSCRIPTION_ID, AZURE_RESOURCE_GROUP and APIM_NAME",
-                        "decision": decision,
-                    },
-                    indent=2,
-                )
-            )
+        problem = _apply_problem(subscription, resource_group, apim_name)
+        if problem:
+            print(json.dumps({"applied": False, "error": problem, "decision": decision}, indent=2))
             return 2
-        subprocess.run(command, check=True)
-        applied = True
     report = {
         "decision": decision,
         "stable_prompt": stable_prompt.ref,

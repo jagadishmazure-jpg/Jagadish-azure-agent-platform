@@ -2,8 +2,7 @@
 
 Tracks which prompt version and model produced a score, and decides whether API Management
 should send the canary's traffic back to the stable version. The decision function does not
-call Azure. The script prints the `az rest` update and, with `--apply`, sends it only when the
-subscription, resource group and APIM name are set.
+call Azure. The script prints the `az rest` update. `--apply` checks the subscription, resource group and APIM name, then prints that command for an operator to run. It does not execute it.
 
 | File | What it does |
 |---|---|
