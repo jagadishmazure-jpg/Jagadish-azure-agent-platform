@@ -36,7 +36,9 @@ class SkillContext(Protocol):
     state: dict[str, Any]
     approval: CreditDecision | None
 
-    async def call_tool(self, name: str, args: dict) -> dict: ...
+    async def call_tool(self, name: str, args: dict) -> dict:
+        """Call one tool on the Toolbox MCP endpoint."""
+        raise NotImplementedError
 
 
 @dataclass
