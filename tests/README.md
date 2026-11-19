@@ -1,6 +1,6 @@
 # `tests/`: offline test suite
 
-The pytest suite (137 tests). Everything runs offline: `conftest.py` forces `AAP_MODE=offline`,
+The pytest suite (155 tests). Everything runs offline: `conftest.py` forces `AAP_MODE=offline`,
 writes file checkpoints to a temp directory instead of the working tree and resets the kill
 switch around every test. A2A calls go through the in-process ASGI mesh; no Azure resources,
 network or Docker are required.
@@ -12,6 +12,8 @@ network or Docker are required.
 | [`test_bff.py`](test_bff.py) | Underwrite then HITL decision, unknown loan rejected, directory and admin kill switch, Azure mode rejects forged groups, chat endpoints and inbound safety (5). |
 | [`test_evals.py`](test_evals.py) | Golden sets pass the release gate, policy evaluator catches violations, gate fails on regression, custom evaluator runs under `azure.ai.evaluation.evaluate()` offline, index definition matches the query contract, seed script dry run (6). |
 | [`test_harness.py`](test_harness.py) | Budgets (identical calls, writes), traceparent propagation, kill-switch scopes, five exits, circuit breaker, failure table completeness, prompt pack versioning and schemas, offline safety gate, mock client structured draft (9). |
+| [`test_ignite_durable.py`](test_ignite_durable.py) | Durable Task stand-in: human wait releases the worker, a new worker does not re-bill finished model calls, crash after intake, denial skips the letter model, idempotent bureau pull, JSON checkpoint, unnamed officer (7). |
+| [`test_ignite_harness.py`](test_ignite_harness.py) | Copilot harness stand-in: Toolbox MCP tool list, credit-officer gate, recovery without a second booking, denial, bank-supplied policy, consent, tool policy, voice, browser Take control, egress, sources and assumptions (11). |
 | [`test_infra.py`](test_infra.py) | Static deploy checks with no Azure calls: azure.yaml services match Container App tags, cost-min default with Private Link off, no local auth on data services, Bicep builds, manual OIDC deploy workflow, canary and workbook in both tools, `azd show` parses the project (9). |
 | [`test_knowledge.py`](test_knowledge.py) | Version in force by date, confidential overlay hidden, reranker score range, OData filter syntax, context builder drops injection and cites, cache degrade, graph RAG non-arm's-length, Document Intelligence offline fields, redaction (9). |
 | [`test_live_eval.py`](test_live_eval.py) | Live eval skip path, illustrative cost, Cohen's kappa, human-label disagreement, injected judges, the Azure Evaluation SDK adapter with mocks, canary prompt selection, LangSmith failure (10). |
@@ -25,7 +27,7 @@ network or Docker are required.
 Numbers in brackets are test counts from `pytest --collect-only`.
 
 ```bash
-pytest -q                                   # all 137
+pytest -q                                   # all 155
 pytest tests/test_mortgage_workflow.py -k outage
 ruff check . && ruff format --check .       # lint, as in CI
 ```

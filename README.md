@@ -4,16 +4,17 @@
 
 - **Multi-agent mortgage underwriting on Azure:** agents read the loan documents (pay stubs, W-2s, bank statements), run income, credit and guideline checks in parallel, review assets, have a critic agent verify every condition cites a guideline, then pause for a human underwriter's approval before issuing the decision letter.
 - **Survives crashes:** the workflow checkpoints its state, so a restarted process resumes the loan where it left off instead of starting over (covered by tests).
+- **Ignite 2026, offline:** a commercial-loan agent on a stand-in for the Microsoft Copilot harness (public preview) with a Toolbox MCP endpoint and a credit-officer gate, plus a Durable Task-style workflow that resumes on a new worker without billing finished model calls again. Sources, a diagram, and assumptions are in [Ignite 2026](#ignite-2026-harness-toolboxes-and-durable-agents).
 - **Governed agent-to-agent (A2A) calls:** CRM, ERP and underwriting agents publish agent cards; a directory controls who may call whom, requires an eval score before promotion, and has a kill switch.
 - **All five Microsoft Agent Framework built-in orchestrations** (sequential, concurrent, handoff, group chat, Magentic) run on the same loan review and are compared side by side.
-- **Cost-minimized infrastructure as code:** Bicep templates for `azd up` (cost-min profile by default, not deployed yet); 137 automated tests plus eval release gates run in CI.
+- **Cost-minimized infrastructure as code:** Bicep templates for `azd up` (cost-min profile by default, not deployed yet); 155 automated tests plus eval release gates run in CI.
 - **Terraform + Bicep, GitHub Actions deploy:** the same infrastructure in both tools ([`infra/terraform`](infra/terraform/README.md)), and a GitHub Actions pipeline with OIDC login (no secrets), a Bicep/Terraform choice, and dev -> prod approval gates. Deploy runs only when someone starts it and types `deploy` ([docs/deployment.md](docs/deployment.md)).
 
-**Skills demonstrated:** Microsoft Foundry, Microsoft Agent Framework, Azure OpenAI, Azure AI Search, Document Intelligence, Content Safety, MCP, A2A, Bicep/azd, Container Apps, APIM, Cosmos DB, Service Bus, Python.
+**Skills demonstrated:** Microsoft Foundry, the Copilot harness and Toolboxes, Durable Task agents, Microsoft Agent Framework, Azure OpenAI, Azure AI Search, Document Intelligence, Content Safety, MCP, A2A, Bicep/azd, Container Apps, APIM, Cosmos DB, Service Bus, Python.
 
 *Honesty note: it runs fully offline with deterministic mocks and has not been deployed to live Azure yet (see [Honest limitations](#honest-limitations)).*
 
-**Contents:** [What](#at-a-glance-for-recruiters) · [Why](#why-it-exists) · [Architecture](#architecture-four-planes) · [Run](#run-locally-offline-no-azure) · [Test](#test) · [Deploy](#deploy-to-azure) · [Go live](#go-live) · [Limits](#honest-limitations) · [Docs](#documentation)
+**Contents:** [What](#at-a-glance-for-recruiters) · [Why](#why-it-exists) · [Architecture](#architecture-four-planes) · [Run](#run-locally-offline-no-azure) · [Test](#test) · [Deploy](#deploy-to-azure) · [Go live](#go-live) · [Ignite 2026](#ignite-2026-harness-toolboxes-and-durable-agents) · [Limits](#honest-limitations) · [Docs](#documentation)
 
 An Azure-native agentic AI platform showcase: a **mortgage loan origination and underwriting-conditions multi-agent system** built on **Microsoft Agent Framework (MAF) 1.x** and **Microsoft Foundry**, plus:
 
@@ -134,6 +135,7 @@ sequenceDiagram
 | **Safety** | Content Safety runs on inbound text and on retrieved passages. Prompt Shields (REST) catches injection. The context builder also drops injected passages offline. |
 | **Harness** | Identity envelope, budgets (steps, tokens, identical-call caps), kill switch, retry with circuit breaker, outbox, and OpenTelemetry. Traces go to Azure Monitor when `APPLICATIONINSIGHTS_CONNECTION_STRING` is set, and to the console otherwise. |
 | **Infra** (`infra/`, `azure.yaml`) | Bicep for `azd up`: Foundry account and project with model deployments, AI Search, Document Intelligence, Content Safety, Container Apps (6 apps), APIM, Cosmos serverless, Service Bus, Key Vault, ACR, Log Analytics and App Insights. Two least-privilege managed identities. Optional Private Link with an NSG on both subnets. Azure Monitor alert rules and diagnostic settings (on by default) and opt-in Defender for Cloud plans, in Bicep and Terraform alike. `cost-min` is the default profile. All written and validated offline; not deployed. |
+| **Ignite 2026** (`src/agentplatform/ignite`) | Offline stand-ins for the Microsoft Copilot harness (public preview), a Toolbox served as an MCP endpoint, GA voice / A2A / computer use / browser automation, and the Durable Task extension for Microsoft Agent Framework. A synthetic commercial loan pauses for a credit officer. A second worker resumes the durable workflow and does not bill finished model calls again. Assumptions are in the module. |
 | **Engineering layers** | Eight layers stacked from the bottom up: prompts and context at the base, then workflows, agents and graphs, then loops, the runtime harness, and finally the platform. See [docs/engineering-layers.md](docs/engineering-layers.md). |
 
 ## Industry mapping
@@ -154,7 +156,7 @@ The platform pieces carry over across industries. Only the prompts, tools, corpo
 ```bash
 python -m venv .venv && . .venv/bin/activate && pip install -e ".[dev]"
 make lint            # ruff check + ruff format --check
-make test            # pytest (137 tests, offline)
+make test            # pytest (155 tests, offline)
 make demo            # underwrite L-1001 / L-1002 / L-1003, approve, print letters
 make orchestrations  # the five MAF orchestration patterns + comparison table
 make evals           # golden-set eval gate
@@ -182,7 +184,7 @@ The demo produces three outcomes:
 ## Test
 
 ```bash
-make lint && make test                        # ruff + 137 offline tests
+make lint && make test                        # ruff + 155 offline tests
 make evals                                    # golden-set eval gate (fails on regression)
 python scripts/export_agent_cards.py --check  # agent cards match the code
 make bicep                                    # bicep build, no warnings
@@ -306,18 +308,66 @@ Not captured. After the first deployment, add the four files listed in [docs/go-
 4. **Control plane before agent sprawl.** Every agent, including vendor stand-ins, publishes an A2A card with owner, stage, side-effect class, and allowed callers. The directory enforces who-may-call-whom, and so does the callee. Promotion requires the eval score. Kill switches exist at APIM (global) and in the directory (per agent). `traceparent` and tenant ride every hop, so one App Insights trace spans BFF → graph → A2A → MCP.
 5. **Single agent vs multi-agent is an engineering decision.** HR Q&A is one Foundry prompt agent with the `azure_ai_search` tool. IT triage is one MAF agent with an approval-gated tool. Mortgage is a graph because it needs parallel evidence, a critic loop, durable HITL, and compensating writes. The infra is cost-min by default: scale-to-zero apps, serverless Cosmos, Consumption APIM, pay-per-call AI. That keeps a demo tenant cheap while staying production-shaped.
 
+## Ignite 2026: harness, Toolboxes, and durable agents
+
+Two announcements from November 2026, modeled offline against what those pages actually say. Anything the pages do not specify is an assumption in [`src/agentplatform/ignite/assumptions.py`](src/agentplatform/ignite/assumptions.py). The module README is [src/agentplatform/ignite/README.md](src/agentplatform/ignite/README.md). The component page is [docs/components/ignite-2026.md](docs/components/ignite-2026.md).
+
+- [What's new in Foundry Agent Service at Ignite 2026](https://devblogs.microsoft.com/foundry/whats-new-in-foundry-agent-service-at-ignite-2026/)
+- [Durable Task extension for Microsoft Agent Framework](https://learn.microsoft.com/en-us/azure/durable-task/sdks/durable-agents-microsoft-agent-framework) (GA)
+
+```mermaid
+flowchart TB
+  subgraph foundry[Foundry Agent Service stand-in]
+    DEF[Agent definition kept with the code<br/>instructions, knowledge, skills]
+    H[Copilot harness<br/>public preview<br/>platform loop and sandbox]
+    DEF --> H
+    H --> SK[Bank skills and credit policy]
+    SK --> TB[Toolbox MCP endpoint]
+    TB --> R[Application, bureau, A2A tool]
+    TB --> UI[Computer use and browser automation]
+    TB --> W[record_decision]
+    VOICE[Voice on the same agent - GA] -.-> H
+    H --> OFF[[Credit officer]]
+    OFF --> W
+  end
+  subgraph durable[Durable Task extension stand-in - GA]
+    WA[Worker A] --> CP[(Task hub checkpoint)]
+    CP --> WB[Worker B]
+    WA --> I[intake and credit model calls]
+    WB --> L[letter model call after approval]
+  end
+```
+
+The harness path is a hosted commercial-loan definition. Microsoft, in the product, runs the loop and the sandbox; this process runs a fixed skill order so the demo stays deterministic, and that difference is called out as an assumption. The bank supplies the credit policy, the skills, and the tools. Tools are reached only through the Toolbox MCP server: an idempotent bureau pull, an in-process A2A stand-in, computer use that drives no desktop, and an isolated browser session with Live View, Take control, and a `customer-storage://` recording label. The run pauses for a named credit officer. Nothing is booked before that. Voice attaches to the same skills and cannot book. Hosted-agent recovery reruns the handler and skips skills already saved, so the pull and the booking do not repeat.
+
+The durable path is separate, because the Learn article's rule is different: each agent call is checkpointed, and a completed call is not executed again. Worker A runs intake and credit, then releases. Worker B loads the JSON checkpoint and, after the officer approves, calls the model only for the letter. The earlier charges stay on worker A. A denial writes an adverse-notice activity and does not call the letter model. Token counts are fixtures, not Azure prices. The article does not publish a billing API; skipping the re-execution is what this demo treats as skipping the re-bill.
+
+### Interview talking points
+
+For an Azure and agentic-AI conversation about a regulated lender. Not legal advice. This repo has no fair-lending evaluation.
+
+1. **Name who owns the loop.** The Copilot harness (public preview) runs the loop and the sandbox. The bank's reviewable artifacts are the instructions, the credit policy, the skills, and the tool allow-list. Hosted agents are the other Ignite choice: you bring your own code and orchestration. This demo puts a definition on the harness and labels that as an assumption, because the post presents the two as alternatives. In the product you author that definition in the Foundry UI, the GitHub Copilot app, `azd ai`, or the Foundry Toolkit for VS Code, and you keep it in source control.
+
+2. **Share tools through a Toolbox, and put the write behind a policy.** One managed MCP endpoint serves every agent that needs the bureau, the relationship manager, the UI tools, or the booking. The preview tool-policy stand-in blocks `record_decision` without `approved_by`, and the tool checks again. The bureau tool requires consent and reuses the request id so a replay is not a second hard inquiry. In Azure the toolbox would use a managed identity. This process has no credential. Web Search is GA for prompt agents and, per the post, not yet a Toolbox feature, so it is not registered.
+
+3. **GA voice, A2A, computer use, and browser automation are not a credit authority.** Voice is added to the existing agent, including a barge-in that drops the spoken reply, and the turn cannot book. The A2A tool calls one local stand-in; it is not a substitute for this repo's A2A directory. Browser automation keeps an isolated session, Live View, Take control, and a customer-owned recording label. A person taking the browser is oversight of a screen. The credit officer is the person who approves the commitment.
+
+4. **Say which resume model the wait uses before you design it.** A credit committee can take days. Foundry hosted-agent recovery (GA) reruns the handler, so the app saves progress and makes side effects idempotent; an idle session releases compute (timeout from 2 minutes to 4 hours, 15 minutes by default). The Durable Task extension (GA) checkpoints each agent call and does not run a finished call again, so the new worker's model client shows only `letter` and the intake and credit charges are not added a second time. The checkpoint holds customer financials and needs the same controls as the loan file. The article also limits entity state to 1 MB on Durable Task Scheduler, and it says session TTL is .NET-only today (default 14 days).
+
+5. **Keep the decision record off the model narrative.** Payment and DSCR come from the calculator and from policy the bank supplied. The officer id is stored on the booking and on the adverse notice. A denial does not call the letter model. That is the trace a model-risk review wants: policy id, calculator output, named approver, idempotency key. Voice, Take control, and a replacement worker can all see the file, and none of them may skip the officer.
+
 ## Repo layout
 
 ```
 src/agentplatform/   config · harness/ · prompts/ · context/ · knowledge/ · docintel/ · llm/ · llmops/ · safety/
-                     mcp_servers/ · mortgage/ · orchestrations/ · a2a/ · single/ · evals/ · bff.py
+                     mcp_servers/ · mortgage/ · orchestrations/ · a2a/ · single/ · ignite/ · evals/ · bff.py
 control-plane/       agent-cards/*.json (+ _policy.json), generated by scripts/export_agent_cards.py
 infra/               main.bicep, main.parameters.json, modules/*.bicep, terraform/ (Terraform twin)
 services/            bff/, a2a/, mcp/ Dockerfiles
 scripts/             foundry_register · seed_search_index · run_evals · synthetic_load · canary_rollback · export_agent_cards · render_docs · demo · orchestrations_demo · run_local_mesh · postprovision
 observability/       KQL for the Application Insights workbook
 docs/                components/ · implementation-guide · adopt-this · architecture · orchestration-patterns · engineering-layers · failure-table · cost-estimate · deploy · deployment · sdk-notes · best-practices · adr/
-tests/               137 offline tests (pytest)
+tests/               155 offline tests (pytest)
 ```
 
 ### Repository map
@@ -343,6 +393,7 @@ Every folder has its own README with a file-by-file table:
 | [`src/agentplatform/orchestrations/`](src/agentplatform/orchestrations/README.md) | MAF prebuilt orchestrations (sequential, concurrent, handoff, group chat, Magentic) on one loan review, with a measured comparison |
 | [`src/agentplatform/a2a/`](src/agentplatform/a2a/README.md) | A2A agents, catalog, cards, server, client, registry |
 | [`src/agentplatform/single/`](src/agentplatform/single/README.md) | Single-agent HR and IT examples |
+| [`src/agentplatform/ignite/`](src/agentplatform/ignite/README.md) | Ignite 2026 stand-ins: Copilot harness, Toolbox MCP, durable checkpoint and resume |
 | [`src/agentplatform/evals/`](src/agentplatform/evals/README.md) | Eval runner and release gate |
 | [`src/agentplatform/evals/golden/`](src/agentplatform/evals/golden/README.md) | Golden eval sets |
 | [`control-plane/`](control-plane/README.md) | Generated agent-directory artefacts |
@@ -365,6 +416,7 @@ Every folder has its own README with a file-by-file table:
 ## Honest limitations
 
 * The Azure code paths (Foundry, Search, DI, Content Safety, Cosmos, Service Bus, Azure Monitor) follow the verified SDK signatures but were **not executed against Azure**. No resources were created.
+* The Ignite 2026 module is an offline stand-in for the Copilot harness, Toolboxes, and the Durable Task extension. It does not call those services. The gaps between the stand-in and the two source pages are listed in [`assumptions.py`](src/agentplatform/ignite/assumptions.py).
 * Bicep compiles cleanly (`bicep build`, 0 warnings) and `azd show` parses `azure.yaml`. A real `azd provision` or what-if has not been run. The three service images are built and smoke-tested in CI (`infra.yml`), and the same topology runs over HTTP locally via `make mesh`.
 * All loans, borrowers, guidelines, and HR policies are synthetic. The "Dynamics 365-style", "Salesforce-style", and "SAP-style" agents are stand-ins, not vendor products.
 * The Terraform twin passes `validate`, offline `terraform test`, tflint and checkov, but no `terraform plan` has run against a subscription. Deploy is manual (`workflow_dispatch`, type `deploy`, GitHub Environment approval, OIDC). The Environments, reviewers and federated credentials do not exist yet, and the workflow has not been executed.
@@ -375,7 +427,7 @@ Every folder has its own README with a file-by-file table:
 
 | Document | What it covers |
 |---|---|
-| [`docs/components/`](docs/components/README.md) | One page per component (14) with the same 17 sections: purpose, mermaid architecture, step-by-step flow, key files, generated code excerpts and real output, configuration, commands, tests and eval gates, guardrails, security, observability, failure modes, Azure mapping, limitations, talking points and "Adopt this" |
+| [`docs/components/`](docs/components/README.md) | One page per component (15) with the same 17 sections: purpose, mermaid architecture, step-by-step flow, key files, generated code excerpts and real output, configuration, commands, tests and eval gates, guardrails, security, observability, failure modes, Azure mapping, limitations, talking points and "Adopt this" |
 | [`docs/implementation-guide.md`](docs/implementation-guide.md) | How the platform is built, layer by layer, with the command and test that prove each step |
 | [`docs/adopt-this.md`](docs/adopt-this.md) | How another team reuses, configures and extends the platform without losing its controls |
 | [`docs/best-practices.md`](docs/best-practices.md) | Enterprise cloud and agentic AI practices, each marked implemented, written-not-deployed or planned, with links to the code |

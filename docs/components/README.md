@@ -18,3 +18,4 @@ One page per component, each with the same 17 sections (purpose through 'Adopt t
 | Single agents: HR policy and IT service desk | [single-agents.md](single-agents.md) |
 | BFF and services | [bff-and-services.md](bff-and-services.md) |
 | Infrastructure | [infrastructure.md](infrastructure.md) |
+| Ignite 2026: Copilot harness, Toolboxes, and Durable Task agents | [ignite-2026.md](ignite-2026.md) |

@@ -13,6 +13,7 @@ How another team can reuse the platform: what to take, what to configure, and ho
 | retrieval that respects dates and permissions | `knowledge/` and `context/` | [knowledge-and-context.md](components/knowledge-and-context.md) |
 | budgets, kill switches and named failure exits | `harness/` | [harness.md](components/harness.md) |
 | a quality gate in CI | `evals/` and `scripts/run_evals.py` | [evals.md](components/evals.md) |
+| an offline model of the Copilot harness, a Toolbox, and durable resume | `ignite/` | [ignite-2026.md](components/ignite-2026.md) |
 | a landing zone | `infra/` (Bicep or Terraform) | [infrastructure.md](components/infrastructure.md) |
 
 ## Configure

@@ -26,6 +26,13 @@ follows reality and the difference is called out.
 `azure-ai-agents` (1.1.0, 2025-08) is the *classic* threads/runs Agents SDK. The current Foundry
 Agent Service surface used here is `azure-ai-projects` 2.x (`project.agents.create_version`).
 
+## Ignite 2026 stand-ins (SDKs not installed)
+
+`src/agentplatform/ignite/` does not import `azure-ai-projects`, `agent_framework.azure`, or a Durable Task client. Nothing in that package was checked by calling Foundry or the Durable Task Scheduler. The behavior follows two public pages, and every place the stand-in goes past those pages is the `ASSUMPTIONS` tuple:
+
+- Foundry Agent Service at Ignite 2026: <https://devblogs.microsoft.com/foundry/whats-new-in-foundry-agent-service-at-ignite-2026/>
+- Durable Task extension for Microsoft Agent Framework: <https://learn.microsoft.com/en-us/azure/durable-task/sdks/durable-agents-microsoft-agent-framework>
+
 ## Microsoft Agent Framework 1.x (verified by running code)
 
 * `Agent(client=<chat client>, instructions=..., name=..., tools=[...])`; `await agent.run(text, options={"response_format": PydanticModel})` → `response.value` is the parsed model.

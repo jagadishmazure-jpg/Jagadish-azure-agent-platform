@@ -26,6 +26,7 @@ default; `AAP_MODE=azure` swaps each adapter for its Azure service, in one place
 | [`prompts/`](prompts/README.md) | Versioned prompt pack bound to output schemas, plus Prompty files for the canary. |
 | [`safety/`](safety/README.md) | Content Safety and Prompt Shields gate. |
 | [`single/`](single/README.md) | Single-agent examples: HR policy and IT service desk. |
+| [`ignite/`](ignite/README.md) | Ignite 2026 stand-ins: Copilot harness with a Toolbox MCP endpoint, and a durable multi-agent checkpoint that resumes on a new worker. Offline only. |
 
 ## Layering
 
@@ -43,5 +44,5 @@ harness/ wraps every node: identity + traceparent, budgets, kill switch, retry/b
 ```bash
 uvicorn agentplatform.bff:app --port 8080       # in-process BFF (offline mocks)
 curl -X POST localhost:8080/loans/L-1001/underwrite
-pytest -q                                       # 137 offline tests
+pytest -q                                       # 155 offline tests
 ```

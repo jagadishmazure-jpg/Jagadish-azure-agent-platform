@@ -164,6 +164,12 @@ def llm() -> None:
     asyncio.run(go())
 
 
+def ignite() -> None:
+    from agentplatform.ignite import demo
+
+    demo()
+
+
 def bff() -> None:
     import logging
 
@@ -195,7 +201,7 @@ def bff() -> None:
 
 DEMOS = {
     f.__name__: f
-    for f in (knowledge, context, docintel, safety, prompts, a2a, harness, mcp, single, llm, bff)
+    for f in (knowledge, context, docintel, safety, prompts, a2a, harness, mcp, single, llm, ignite, bff)
 }
 
 if __name__ == "__main__":
