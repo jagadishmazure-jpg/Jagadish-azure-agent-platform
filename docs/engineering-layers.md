@@ -13,6 +13,15 @@ Each layer can be changed, tested, and versioned on its own. The table points to
 | **Harness** | Identity envelope (principal, tenant, traceparent), budgets (steps/tokens/tool calls/identical-call caps), kill switch, retries + circuit breaker, five-exit failure policy, outbox, OpenTelemetry. | `harness/*` | `test_harness.py` |
 | **Platform** | Tool plane (MCP servers behind a gateway), agent control plane (A2A cards, directory, who-can-call-whom, promotion gate), BFF, Foundry agent registration, content safety, Bicep/azd, CI. | `mcp_servers/*`, `a2a/*`, `bff.py`, `safety/*`, `scripts/*`, `infra/*`, `.github/workflows/*` | `test_mcp.py`, `test_a2a.py`, `test_bff.py`, `test_infra.py` |
 
+## Two more runtimes
+
+The eight layers above are the mortgage platform. Two further packages show other Azure agent hosts, both offline:
+
+| Runtime | What it owns | Where | How it's tested |
+|---|---|---|---|
+| **Copilot harness** | Managed loop and sandbox. The sample supplies a skill, as-of knowledge and Toolbox tools. | `foundry_harness/` | `test_foundry_harness.py` |
+| **Durable Task replay** | History of agent calls. Resume skips completed model calls and can park on a human event. | `durable_agents/` | `test_durable_agents.py` |
+
 ## Ops loops (MLOps + LLMOps + AgentOps)
 
 * **MLOps**: the deterministic calculators and rule parameters (DTI max, score floors) are versioned *data* in the guideline index (`params_json`). No trained model ships in this repo. A bureau score or fraud model would plug in as an MCP tool with its own model registry.
