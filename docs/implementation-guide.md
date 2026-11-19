@@ -67,6 +67,10 @@ python scripts/doc_drift.py          # refresh blocks
 python scripts/doc_drift.py --check  # what CI runs
 ```
 
-## 12. Switching to Azure
+## 12. Ignite 2026 stand-ins
+
+`src/agentplatform/ignite/` is a separate, offline module for the Copilot harness, a Toolbox MCP endpoint, and durable checkpoint/resume. It does not go through `AAP_MODE`. Proof: `python scripts/component_demos.py ignite` and `pytest tests/test_ignite_harness.py tests/test_ignite_durable.py`. The component page is [components/ignite-2026.md](components/ignite-2026.md). Read `ASSUMPTIONS` in that package before describing a behavior as a product guarantee.
+
+## 13. Switching to Azure
 
 Run `azd up` in a sandbox subscription (see [deploy.md](deploy.md)), then set `AAP_MODE=azure` with the azd outputs. The postprovision hook seeds AI Search, registers the Foundry agents and checks the agent cards. The Azure code paths follow the verified SDK signatures but have only run offline.

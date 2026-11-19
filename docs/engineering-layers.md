@@ -11,7 +11,7 @@ Each layer can be changed, tested, and versioned on its own. The table points to
 | **Graph** | Knowledge graph over borrower / property / counterparties for related-party and non-arm's-length detection. | `knowledge/graph.py` | `test_graph_rag_detects_non_arms_length` |
 | **Loop** | Critic/evaluator loop: every condition must cite a guideline that is in the evidence and in force; one bounded repair pass, then drop + escalate. Offline evals are the promotion gate. | `mortgage/critic.py`, `evals/*` | `test_critic_*`, `test_evals.py` |
 | **Harness** | Identity envelope (principal, tenant, traceparent), budgets (steps/tokens/tool calls/identical-call caps), kill switch, retries + circuit breaker, five-exit failure policy, outbox, OpenTelemetry. | `harness/*` | `test_harness.py` |
-| **Platform** | Tool plane (MCP servers behind a gateway), agent control plane (A2A cards, directory, who-can-call-whom, promotion gate), BFF, Foundry agent registration, content safety, Bicep/azd, CI. | `mcp_servers/*`, `a2a/*`, `bff.py`, `safety/*`, `scripts/*`, `infra/*`, `.github/workflows/*` | `test_mcp.py`, `test_a2a.py`, `test_bff.py`, `test_infra.py` |
+| **Platform** | Tool plane (MCP servers behind a gateway), agent control plane (A2A cards, directory, who-can-call-whom, promotion gate), BFF, Foundry agent registration, content safety, Bicep/azd, CI. The Ignite 2026 module adds an offline Copilot harness, a Toolbox MCP endpoint, and a durable worker that resumes from a JSON task hub. | `mcp_servers/*`, `a2a/*`, `bff.py`, `safety/*`, `ignite/*`, `scripts/*`, `infra/*`, `.github/workflows/*` | `test_mcp.py`, `test_a2a.py`, `test_bff.py`, `test_infra.py`, `test_ignite_harness.py`, `test_ignite_durable.py` |
 
 ## Ops loops (MLOps + LLMOps + AgentOps)
 
