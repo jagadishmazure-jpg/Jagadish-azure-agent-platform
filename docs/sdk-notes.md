@@ -147,6 +147,17 @@ Import from `agent_framework.orchestrations`.
 
 * `agent_framework_azure_cosmos.CosmosCheckpointStorage` creates/uses a container partitioned on `/workflow_name` — the Bicep `checkpoints` container matches. That is why each run gets its own workflow name (`mortgage-uw:{run_id}`).
 
+## Preview surfaces mocked here (`[verify]`)
+
+Checked against the pinned environment: `azure-ai-projects` 2.6.1 has no `toolboxes` operation group, and `agent-framework-foundry` 1.13.1 does not export `FoundryToolbox`. `agent_framework.azure.AgentFunctionApp` and `durabletask` are not installed. The modules below copy the public write-ups and do not call those APIs.
+
+| Surface | Where it is documented | What this repo does |
+|---|---|---|
+| Microsoft Copilot harness, `harness.type: microsoft_copilot_preview` | [Ignite 2026 Foundry Agent Service post](https://devblogs.microsoft.com/foundry/whats-new-in-foundry-agent-service-at-ignite-2026/), [harness introduction](https://devblogs.microsoft.com/foundry/microsoft-copilot-harness-in-foundry/). Public preview. Select it only when the prompt agent is created. | `src/agentplatform/foundry_harness/`. The harness mock owns the loop and the sandbox. `[verify]` |
+| Toolbox `project.toolboxes.create_version`, consumer MCP URL, `FoundryToolbox` | [Create a toolbox](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/toolbox), [hosted agent](https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/use-toolbox-hosted-agent). | `MockToolboxService`. `tools/list` advertises `require_approval`. `tools/call` does not enforce it. `[verify]` on the SDK types, which are absent from the pin. |
+| Preview tool policies | Ignite 2026 post (preview tool policies on Toolboxes). | Stored on the toolbox version with `status: [verify]`. Not evaluated. |
+| Durable Task extension: `AgentFunctionApp`, `app.get_agent`, `DurableAIAgentWorker` | [Durable agents for Microsoft Agent Framework](https://learn.microsoft.com/en-us/azure/durable-task/sdks/durable-agents-microsoft-agent-framework). | `src/agentplatform/durable_agents/`. JSON history. Completed agent calls are not executed on resume. `[verify]` on the import paths, which were not executed. |
+
 ## Not verifiable offline
 
 * Real Azure calls (Foundry agent creation, Search queries, DI analysis, Content Safety, Cosmos, Service Bus, App Insights export) are behind `AAP_MODE=azure` and were **not executed** — no Azure resources were created. Their code paths follow the signatures above and are import-checked in tests.

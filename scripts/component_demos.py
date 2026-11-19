@@ -164,6 +164,91 @@ def llm() -> None:
     asyncio.run(go())
 
 
+def foundry_harness() -> None:
+    from datetime import date
+
+    from agentplatform.foundry_harness.loan import (
+        TOOLBOX_NAME,
+        build_lending_toolbox,
+        load_agent_definition,
+        start_loan_review,
+    )
+    from agentplatform.foundry_harness.models import SkillRef, ToolboxTool
+    from agentplatform.foundry_harness.toolbox import PREVIEW_TOOL_POLICIES
+
+    definition = load_agent_definition()
+    print("harness:", definition["harness_type"], definition["verify"])
+    harness, run = start_loan_review("L-2001", date(2025, 3, 1))
+    print(f"L-2001 status={run.status} pending={run.pending_tool} in_force={harness.in_force_ids}")
+    done = harness.resume(run, approved=True, approver="uw-1")
+    print(
+        f"approved status={done.status} ticket={done.writes[0]['ticket']} "
+        f"duplicate={done.writes[0]['duplicate']} citation={done.citation_ids}"
+    )
+    _, referred = start_loan_review("L-2002", date(2025, 3, 1))
+    print(f"L-2002 status={referred.status} writes={len(referred.writes)} citation={referred.citation_ids}")
+    _, shell = start_loan_review("L-2001", date(2025, 3, 1), behavior="shell")
+    print(f"shell status={shell.status} answer={shell.answer}")
+    service, consumer = build_lending_toolbox()
+    pinned = service.developer_endpoint(TOOLBOX_NAME, "1")
+
+    def reserves(_: dict) -> dict:
+        return {"months": 6}
+
+    service.create_version(
+        TOOLBOX_NAME,
+        description="Adds a reserves read.",
+        tools=[
+            *service.resolve(pinned).tools,
+            ToolboxTool("get_reserves", "Read reserve months.", {"type": "object"}, "never", reserves),
+        ],
+        skills=[SkillRef("underwrite-file")],
+        policies=PREVIEW_TOOL_POLICIES,
+    )
+    before = [item["name"] for item in service.tools_list(consumer)]
+    service.promote(TOOLBOX_NAME, "2")
+    after = [item["name"] for item in service.tools_list(consumer)]
+    pinned_names = [item["name"] for item in service.tools_list(pinned)]
+    print(f"consumer before promote={before}")
+    print(f"consumer after promote={after}")
+    print(f"developer v1={pinned_names}")
+
+
+def durable_agents() -> None:
+    import tempfile
+    from pathlib import Path
+
+    from agentplatform.durable_agents.loan import build_loan_app
+    from agentplatform.durable_agents.runtime import JsonHistoryStore
+
+    with tempfile.TemporaryDirectory() as directory:
+        store = JsonHistoryStore(Path(directory))
+        app = build_loan_app(store)
+        waiting = app.start("loan_review", "run-1", {"loan_id": "L-2001"})
+        print(f"status={waiting['status']} executions={','.join(waiting['execution_log'])}")
+        restarted = build_loan_app(store)
+        print(f"intake calls after restart={len(restarted.agents['intake'].calls)}")
+        still = restarted.resume("loan_review", "run-1")
+        print(f"still={still['status']} executions={','.join(still['execution_log'])}")
+        restarted.raise_event("run-1", "underwriter_approval", {"approved": True, "approver": "uw-1"})
+        done = restarted.resume("loan_review", "run-1")
+        print(
+            f"done={done['output']['status']} ticket={done['output']['ticket']} "
+            f"executions={','.join(done['execution_log'])}"
+        )
+        print(
+            f"replayed intake={len(restarted.agents['intake'].calls)} "
+            f"letter={len(restarted.agents['letter'].calls)}"
+        )
+        third = build_loan_app(store)
+        again = third.resume("loan_review", "run-1")
+        print(
+            f"second resume={again['output']['status']} "
+            f"executions={','.join(again['execution_log'])} "
+            f"letter calls={len(third.agents['letter'].calls)}"
+        )
+
+
 def bff() -> None:
     import logging
 
@@ -195,7 +280,21 @@ def bff() -> None:
 
 DEMOS = {
     f.__name__: f
-    for f in (knowledge, context, docintel, safety, prompts, a2a, harness, mcp, single, llm, bff)
+    for f in (
+        knowledge,
+        context,
+        docintel,
+        safety,
+        prompts,
+        a2a,
+        harness,
+        mcp,
+        single,
+        llm,
+        foundry_harness,
+        durable_agents,
+        bff,
+    )
 }
 
 if __name__ == "__main__":

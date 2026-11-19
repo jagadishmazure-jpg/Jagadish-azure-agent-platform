@@ -4,9 +4,11 @@
 
 - **Multi-agent mortgage underwriting on Azure:** agents read the loan documents (pay stubs, W-2s, bank statements), run income, credit and guideline checks in parallel, review assets, have a critic agent verify every condition cites a guideline, then pause for a human underwriter's approval before issuing the decision letter.
 - **Survives crashes:** the workflow checkpoints its state, so a restarted process resumes the loan where it left off instead of starting over (covered by tests).
+- **Foundry Copilot harness and Toolboxes (offline):** the harness owns the agent loop and sandbox; the sample supplies a skill, guideline knowledge and a Toolbox on a managed MCP endpoint, and waits for a named person before a commitment write.
+- **Durable Task replay (offline):** a multi-agent review parks on a human approval and, after resume, does not run completed model calls again (covered by tests).
 - **Governed agent-to-agent (A2A) calls:** CRM, ERP and underwriting agents publish agent cards; a directory controls who may call whom, requires an eval score before promotion, and has a kill switch.
 - **All five Microsoft Agent Framework built-in orchestrations** (sequential, concurrent, handoff, group chat, Magentic) run on the same loan review and are compared side by side.
-- **Cost-minimized infrastructure as code:** Bicep templates for `azd up` (cost-min profile by default, not deployed yet); 137 automated tests plus eval release gates run in CI.
+- **Cost-minimized infrastructure as code:** Bicep templates for `azd up` (cost-min profile by default, not deployed yet); 154 automated tests plus eval release gates run in CI.
 - **Terraform + Bicep, GitHub Actions deploy:** the same infrastructure in both tools ([`infra/terraform`](infra/terraform/README.md)), and a GitHub Actions pipeline with OIDC login (no secrets), a Bicep/Terraform choice, and dev -> prod approval gates. Deploy runs only when someone starts it and types `deploy` ([docs/deployment.md](docs/deployment.md)).
 
 **Skills demonstrated:** Microsoft Foundry, Microsoft Agent Framework, Azure OpenAI, Azure AI Search, Document Intelligence, Content Safety, MCP, A2A, Bicep/azd, Container Apps, APIM, Cosmos DB, Service Bus, Python.
@@ -134,7 +136,55 @@ sequenceDiagram
 | **Safety** | Content Safety runs on inbound text and on retrieved passages. Prompt Shields (REST) catches injection. The context builder also drops injected passages offline. |
 | **Harness** | Identity envelope, budgets (steps, tokens, identical-call caps), kill switch, retry with circuit breaker, outbox, and OpenTelemetry. Traces go to Azure Monitor when `APPLICATIONINSIGHTS_CONNECTION_STRING` is set, and to the console otherwise. |
 | **Infra** (`infra/`, `azure.yaml`) | Bicep for `azd up`: Foundry account and project with model deployments, AI Search, Document Intelligence, Content Safety, Container Apps (6 apps), APIM, Cosmos serverless, Service Bus, Key Vault, ACR, Log Analytics and App Insights. Two least-privilege managed identities. Optional Private Link with an NSG on both subnets. Azure Monitor alert rules and diagnostic settings (on by default) and opt-in Defender for Cloud plans, in Bicep and Terraform alike. `cost-min` is the default profile. All written and validated offline; not deployed. |
+| **Foundry Copilot harness and Toolboxes** (`src/agentplatform/foundry_harness`) | Offline mock of a Foundry prompt agent on the Microsoft Copilot harness. The harness owns the loop and the sandbox. The sample supplies `underwrite-file`, as-of guidelines and a Toolbox (`lending-toolbox`) exposed as a managed MCP endpoint. `queue_commitment` waits for a named approver. Preview API shapes are marked `[verify]`. See [Foundry harness and durable replay](#foundry-harness-and-durable-replay). |
+| **Durable Task agents** (`src/agentplatform/durable_agents`) | Offline checkpoint and resume for a multi-agent loan review, including a durable underwriter wait. Tests show completed model calls are not executed again after a new process loads the history. See [Foundry harness and durable replay](#foundry-harness-and-durable-replay). |
 | **Engineering layers** | Eight layers stacked from the bottom up: prompts and context at the base, then workflows, agents and graphs, then loops, the runtime harness, and finally the platform. See [docs/engineering-layers.md](docs/engineering-layers.md). |
+
+## Foundry harness and durable replay
+
+Two more ways to run an agent, both offline and both aimed at a generic Azure and agentic-AI interview. They sit beside the mortgage graph: that graph owns its loop; these two show the managed harness and the Durable Task replay rule.
+
+### Copilot harness and Toolboxes
+
+Microsoft Foundry Agent Service can host a prompt agent on the **Microsoft Copilot harness** (public preview). Foundry runs the agent loop and the sandbox. The developer supplies knowledge, skills and tools. **Toolboxes** publish a shared set of tools as one managed MCP endpoint, with a consumer URL that always serves the default version.
+
+This repo's mock is `src/agentplatform/foundry_harness/`. A loan-commitment skill reads the application, cites the guideline in force on the application date, and queues a commitment only after a named person approves. The mock MCP `tools/call` does not enforce `require_approval`; the harness does. `[verify]` marks preview shapes that are not in the pinned SDKs (`microsoft_copilot_preview`, `project.toolboxes.create_version`, `FoundryToolbox`, preview tool policies).
+
+```mermaid
+flowchart LR
+  SK[Skill + knowledge + definition] --> H[Copilot harness<br/>loop and sandbox]
+  H --> TB[Toolbox MCP endpoint]
+  TB --> READ[get_application]
+  H --> GATE{queue_commitment<br/>require_approval always}
+  GATE -->|named approval| WRITE[one idempotent write]
+  GATE -->|denial| BACK[no write]
+```
+
+- Ignite 2026 announcement: https://devblogs.microsoft.com/foundry/whats-new-in-foundry-agent-service-at-ignite-2026/
+- Copilot harness: https://devblogs.microsoft.com/foundry/microsoft-copilot-harness-in-foundry/
+- Toolbox overview: https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/toolbox-overview
+- Create a toolbox: https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/toolbox
+- Toolbox with a hosted agent: https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/use-toolbox-hosted-agent
+- Design notes: [docs/components/foundry-harness.md](docs/components/foundry-harness.md)
+
+### Durable Task for Microsoft Agent Framework
+
+The Durable Task extension checkpoints each agent call in a multi-agent orchestration. On recovery, **completed model calls are not executed again**. A human approval is a durable wait: the instance parks with no further model calls until the event arrives.
+
+`src/agentplatform/durable_agents/` is an offline replay engine with a JSON history file. Intake and credit run, then the workflow waits for `underwriter_approval`. A new process loads the file, skips those two calls, and runs the letter agent only after a named approval. `[verify]` `AgentFunctionApp`, `app.get_agent` and `DurableAIAgentWorker` are the Learn shapes; those packages are not pinned here and were not called.
+
+```mermaid
+flowchart LR
+  IN[intake] --> CR[credit]
+  CR --> WAIT[[underwriter wait]]
+  WAIT -->|named approval| LET[letter]
+  LET --> PUB[publish once]
+  WAIT -->|deny| RET[return the file]
+  HIST[(history)] -.-> IN & CR & LET & PUB
+```
+
+- Learn: https://learn.microsoft.com/en-us/azure/durable-task/sdks/durable-agents-microsoft-agent-framework
+- Design notes: [docs/components/durable-agents.md](docs/components/durable-agents.md)
 
 ## Industry mapping
 
@@ -154,7 +204,7 @@ The platform pieces carry over across industries. Only the prompts, tools, corpo
 ```bash
 python -m venv .venv && . .venv/bin/activate && pip install -e ".[dev]"
 make lint            # ruff check + ruff format --check
-make test            # pytest (137 tests, offline)
+make test            # pytest (154 tests, offline)
 make demo            # underwrite L-1001 / L-1002 / L-1003, approve, print letters
 make orchestrations  # the five MAF orchestration patterns + comparison table
 make evals           # golden-set eval gate
@@ -182,7 +232,7 @@ The demo produces three outcomes:
 ## Test
 
 ```bash
-make lint && make test                        # ruff + 137 offline tests
+make lint && make test                        # ruff + 154 offline tests
 make evals                                    # golden-set eval gate (fails on regression)
 python scripts/export_agent_cards.py --check  # agent cards match the code
 make bicep                                    # bicep build, no warnings
@@ -310,14 +360,14 @@ Not captured. After the first deployment, add the four files listed in [docs/go-
 
 ```
 src/agentplatform/   config · harness/ · prompts/ · context/ · knowledge/ · docintel/ · llm/ · llmops/ · safety/
-                     mcp_servers/ · mortgage/ · orchestrations/ · a2a/ · single/ · evals/ · bff.py
+                     mcp_servers/ · mortgage/ · orchestrations/ · foundry_harness/ · durable_agents/ · a2a/ · single/ · evals/ · bff.py
 control-plane/       agent-cards/*.json (+ _policy.json), generated by scripts/export_agent_cards.py
 infra/               main.bicep, main.parameters.json, modules/*.bicep, terraform/ (Terraform twin)
 services/            bff/, a2a/, mcp/ Dockerfiles
 scripts/             foundry_register · seed_search_index · run_evals · synthetic_load · canary_rollback · export_agent_cards · render_docs · demo · orchestrations_demo · run_local_mesh · postprovision
 observability/       KQL for the Application Insights workbook
 docs/                components/ · implementation-guide · adopt-this · architecture · orchestration-patterns · engineering-layers · failure-table · cost-estimate · deploy · deployment · sdk-notes · best-practices · adr/
-tests/               137 offline tests (pytest)
+tests/               154 offline tests (pytest)
 ```
 
 ### Repository map
@@ -341,6 +391,8 @@ Every folder has its own README with a file-by-file table:
 | [`src/agentplatform/mortgage/`](src/agentplatform/mortgage/README.md) | Flagship underwriting graph, rules, agents |
 | [`src/agentplatform/mortgage/data/`](src/agentplatform/mortgage/data/README.md) | Synthetic loan files |
 | [`src/agentplatform/orchestrations/`](src/agentplatform/orchestrations/README.md) | MAF prebuilt orchestrations (sequential, concurrent, handoff, group chat, Magentic) on one loan review, with a measured comparison |
+| [`src/agentplatform/foundry_harness/`](src/agentplatform/foundry_harness/README.md) | Offline Copilot harness, Toolbox MCP endpoint, loan-commitment approval |
+| [`src/agentplatform/durable_agents/`](src/agentplatform/durable_agents/README.md) | Offline Durable Task replay with a human-approval wait |
 | [`src/agentplatform/a2a/`](src/agentplatform/a2a/README.md) | A2A agents, catalog, cards, server, client, registry |
 | [`src/agentplatform/single/`](src/agentplatform/single/README.md) | Single-agent HR and IT examples |
 | [`src/agentplatform/evals/`](src/agentplatform/evals/README.md) | Eval runner and release gate |
@@ -365,6 +417,7 @@ Every folder has its own README with a file-by-file table:
 ## Honest limitations
 
 * The Azure code paths (Foundry, Search, DI, Content Safety, Cosmos, Service Bus, Azure Monitor) follow the verified SDK signatures but were **not executed against Azure**. No resources were created.
+* The Copilot harness, Toolbox and Durable Task samples are offline mocks. Preview shapes are marked `[verify]` in code and in [docs/sdk-notes.md](docs/sdk-notes.md). They were not called against Foundry Agent Service or the Durable Task Scheduler.
 * Bicep compiles cleanly (`bicep build`, 0 warnings) and `azd show` parses `azure.yaml`. A real `azd provision` or what-if has not been run. The three service images are built and smoke-tested in CI (`infra.yml`), and the same topology runs over HTTP locally via `make mesh`.
 * All loans, borrowers, guidelines, and HR policies are synthetic. The "Dynamics 365-style", "Salesforce-style", and "SAP-style" agents are stand-ins, not vendor products.
 * The Terraform twin passes `validate`, offline `terraform test`, tflint and checkov, but no `terraform plan` has run against a subscription. Deploy is manual (`workflow_dispatch`, type `deploy`, GitHub Environment approval, OIDC). The Environments, reviewers and federated credentials do not exist yet, and the workflow has not been executed.
@@ -375,7 +428,7 @@ Every folder has its own README with a file-by-file table:
 
 | Document | What it covers |
 |---|---|
-| [`docs/components/`](docs/components/README.md) | One page per component (14) with the same 17 sections: purpose, mermaid architecture, step-by-step flow, key files, generated code excerpts and real output, configuration, commands, tests and eval gates, guardrails, security, observability, failure modes, Azure mapping, limitations, talking points and "Adopt this" |
+| [`docs/components/`](docs/components/README.md) | One page per component (16) with the same 17 sections: purpose, mermaid architecture, step-by-step flow, key files, generated code excerpts and real output, configuration, commands, tests and eval gates, guardrails, security, observability, failure modes, Azure mapping, limitations, talking points and "Adopt this" |
 | [`docs/implementation-guide.md`](docs/implementation-guide.md) | How the platform is built, layer by layer, with the command and test that prove each step |
 | [`docs/adopt-this.md`](docs/adopt-this.md) | How another team reuses, configures and extends the platform without losing its controls |
 | [`docs/best-practices.md`](docs/best-practices.md) | Enterprise cloud and agentic AI practices, each marked implemented, written-not-deployed or planned, with links to the code |
