@@ -23,6 +23,8 @@ default; `AAP_MODE=azure` swaps each adapter for its Azure service, in one place
 | [`mcp_servers/`](mcp_servers/README.md) | Credit bureau and LOS MCP servers plus the tool gateway. |
 | [`mortgage/`](mortgage/README.md) | The flagship MAF workflow for mortgage underwriting conditions. |
 | [`orchestrations/`](orchestrations/README.md) | MAF's five prebuilt multi-agent orchestrations (sequential, concurrent, handoff, group chat, Magentic) on a loan conditions review, with a measured comparison. |
+| [`foundry_harness/`](foundry_harness/README.md) | Offline Copilot harness and Toolbox. The harness owns the loop; a loan commitment waits for a named approver. Preview shapes are marked `[verify]`. |
+| [`durable_agents/`](durable_agents/README.md) | Offline Durable Task replay. Completed model calls are not executed again after resume. |
 | [`prompts/`](prompts/README.md) | Versioned prompt pack bound to output schemas, plus Prompty files for the canary. |
 | [`safety/`](safety/README.md) | Content Safety and Prompt Shields gate. |
 | [`single/`](single/README.md) | Single-agent examples: HR policy and IT service desk. |
@@ -35,6 +37,8 @@ bff.py (experience) ──> mortgage/ (MAF graph) ──> llm/ · prompts/ · co
         │                     ├──> mcp_servers/ (credit bureau, LOS) via ToolGateway
         │                     └──> a2a/ (CRM / ERP agents) via A2AClient + directory policy
         └──> single/ (HR, IT agents)
+foundry_harness/   Copilot harness mock: skill + knowledge + Toolbox MCP, human approval before the write
+durable_agents/    Durable Task replay: completed model calls are skipped on resume
 harness/ wraps every node: identity + traceparent, budgets, kill switch, retry/breaker, five exits, outbox, OTel
 ```
 
@@ -43,5 +47,5 @@ harness/ wraps every node: identity + traceparent, budgets, kill switch, retry/b
 ```bash
 uvicorn agentplatform.bff:app --port 8080       # in-process BFF (offline mocks)
 curl -X POST localhost:8080/loans/L-1001/underwrite
-pytest -q                                       # 137 offline tests
+pytest -q                                       # 154 offline tests
 ```

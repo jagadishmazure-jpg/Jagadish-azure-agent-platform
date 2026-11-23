@@ -14,6 +14,8 @@ How another team can reuse the platform: what to take, what to configure, and ho
 | budgets, kill switches and named failure exits | `harness/` | [harness.md](components/harness.md) |
 | a quality gate in CI | `evals/` and `scripts/run_evals.py` | [evals.md](components/evals.md) |
 | a landing zone | `infra/` (Bicep or Terraform) | [infrastructure.md](components/infrastructure.md) |
+| a managed loop, with your skill and a shared toolbox | `foundry_harness/`: Copilot harness mock, Toolbox MCP endpoint, human approval before the write | [foundry-harness.md](components/foundry-harness.md) |
+| durable multi-agent replay that skips finished model calls | `durable_agents/`: JSON history, underwriter wait, idempotent publish | [durable-agents.md](components/durable-agents.md) |
 
 ## Configure
 

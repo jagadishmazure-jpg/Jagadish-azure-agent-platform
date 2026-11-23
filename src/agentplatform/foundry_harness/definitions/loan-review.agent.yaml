@@ -1,0 +1,10 @@
+# [verify] public preview. Select microsoft_copilot_preview only when the prompt agent is created.
+# The real service does not support switching the harness on an existing agent.
+kind: prompt
+agent_name: loan-review
+harness:
+  type: microsoft_copilot_preview
+model: gpt-5-mini
+skill: underwrite-file
+toolbox: lending-toolbox
+instructions: Follow underwrite-file. Cite only an in-force guideline. Queue a commitment only after a named human approves.

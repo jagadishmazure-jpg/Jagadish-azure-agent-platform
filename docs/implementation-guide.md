@@ -50,6 +50,13 @@ Build `mortgage/` in this order: calculators (pure functions), rules, critic, ag
 - HR and IT single agents ([components/single-agents.md](components/single-agents.md)).
 - The FastAPI BFF and the three container images ([components/bff-and-services.md](components/bff-and-services.md)).
 
+## 8a. Managed harness and durable replay
+
+- Copilot harness and Toolbox (`foundry_harness/`): the harness owns the loop and the sandbox, the Toolbox publishes tools on a mock MCP endpoint, and a loan commitment waits for a named person ([components/foundry-harness.md](components/foundry-harness.md)). Proof: `pytest tests/test_foundry_harness.py`.
+- Durable Task replay (`durable_agents/`): a multi-agent review parks on an underwriter event, and a new process does not call completed model steps again ([components/durable-agents.md](components/durable-agents.md)). Proof: `pytest tests/test_durable_agents.py`.
+
+Both are offline. Preview API shapes are marked `[verify]` in [sdk-notes.md](sdk-notes.md).
+
 ## 9. Evals as a release gate
 
 Golden sets, custom evaluators and `THRESHOLDS` ([components/evals.md](components/evals.md)). `python scripts/run_evals.py --out evals-out` exits 1 on regression and runs in CI.
